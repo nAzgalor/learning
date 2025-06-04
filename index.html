@@ -1,0 +1,2054 @@
+<!doctype html>
+<html lang="uk">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Навчальний центр! 📚🎓</title>
+        <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Comic Sans MS", cursive, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                color: white;
+                overflow-x: hidden;
+            }
+
+            .header {
+                text-align: center;
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+                margin-bottom: 10px;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+
+            .mode-selector {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+                margin: 15px 0;
+            }
+
+            .mode-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 20px;
+                font-size: 1rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background: rgba(255, 255, 255, 0.3);
+                color: white;
+            }
+
+            .mode-btn.active {
+                background: rgba(255, 255, 255, 0.9);
+                color: #2d3436;
+            }
+
+            .score-display {
+                font-size: 1.2rem;
+                font-weight: bold;
+                margin-top: 10px;
+                display: none; /* За замовчуванням приховано */
+            }
+
+            .tab-selector {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+                margin: 10px 0;
+            }
+
+            .tab-btn {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 25px;
+                font-size: 1.1rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background: rgba(255, 255, 255, 0.2);
+                color: white;
+            }
+
+            .tab-btn.active {
+                background: rgba(255, 255, 255, 0.9);
+                color: #2d3436;
+                transform: scale(1.05);
+            }
+
+            .progress-bar {
+                width: 100%;
+                max-width: 300px;
+                height: 10px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 5px;
+                margin: 0 auto;
+                overflow: hidden;
+            }
+
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #ffeaa7, #fdcb6e);
+                width: 0%;
+                transition: width 0.5s ease;
+                border-radius: 5px;
+            }
+
+            .main-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+
+            .training-mode {
+                display: none;
+            }
+
+            .training-mode.active {
+                display: block;
+            }
+
+            .learning-mode.active {
+                display: block;
+            }
+
+            .learning-mode {
+                display: none;
+            }
+
+            .question-display {
+                background: rgba(255, 255, 255, 0.9);
+                border-radius: 20px;
+                padding: 30px;
+                margin-bottom: 30px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+                text-align: center;
+                min-width: 350px;
+            }
+
+            .question-emoji {
+                font-size: 6rem;
+                margin: 20px 0;
+                animation: bounce 2s infinite ease-in-out;
+            }
+
+            .question-text {
+                font-size: 1.8rem;
+                color: #2d3436;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+
+            .answer-options {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 15px;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+
+            .answer-btn {
+                aspect-ratio: 1;
+                border: none;
+                border-radius: 15px;
+                font-size: 2rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background: rgba(255, 255, 255, 0.9);
+                color: #2d3436;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            }
+
+            .answer-btn:disabled {
+                cursor: not-allowed;
+                opacity: 0.7;
+            }
+
+            .answer-btn:hover {
+                transform: scale(1.1);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            }
+
+            .answer-btn.correct {
+                background: #00b894;
+                color: white;
+                animation: correctPulse 0.5s ease;
+            }
+
+            .answer-btn.incorrect {
+                background: #e17055;
+                color: white;
+                animation: shake 0.5s ease;
+            }
+
+            @keyframes correctPulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.2);
+                }
+            }
+
+            @keyframes shake {
+                0%,
+                100% {
+                    transform: translateX(0);
+                }
+                25% {
+                    transform: translateX(-5px);
+                }
+                75% {
+                    transform: translateX(5px);
+                }
+            }
+
+            .letter-display {
+                background: rgba(255, 255, 255, 0.9);
+                border-radius: 20px;
+                padding: 30px;
+                margin-bottom: 30px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+                text-align: center;
+                min-width: 350px;
+                transform: scale(1);
+                transition: transform 0.3s ease;
+            }
+
+            .letter-display:hover {
+                transform: scale(1.05);
+            }
+
+            .current-letter {
+                font-size: 6rem;
+                color: #2d3436;
+                font-weight: bold;
+                margin: 0;
+                text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
+                cursor: pointer;
+                user-select: none;
+                animation: letterPulse 2s infinite ease-in-out;
+            }
+
+            .emoji-display {
+                font-size: 4rem;
+                margin: 15px 0;
+                animation: bounce 2s infinite ease-in-out;
+            }
+
+            @keyframes bounce {
+                0%,
+                100% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
+
+            @keyframes letterPulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.1);
+                }
+            }
+
+            .letter-info {
+                margin-top: 15px;
+                color: #2d3436;
+            }
+
+            .letter-name {
+                font-size: 1.3rem;
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+
+            .letter-example {
+                font-size: 1.4rem;
+                color: #00b894;
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+
+            .letter-sound {
+                font-size: 1rem;
+                color: #636e72;
+            }
+
+            .controls {
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+                justify-content: center;
+                margin-bottom: 30px;
+            }
+
+            .btn {
+                padding: 15px 25px;
+                border: none;
+                border-radius: 15px;
+                font-size: 1.2rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            }
+
+            .btn-primary {
+                background: linear-gradient(45deg, #00b894, #00cec9);
+                color: white;
+            }
+
+            .btn-secondary {
+                background: linear-gradient(45deg, #fdcb6e, #e17055);
+                color: white;
+            }
+
+            .btn-accent {
+                background: linear-gradient(45deg, #fd79a8, #e84393);
+                color: white;
+            }
+
+            .btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            }
+
+            .btn:active {
+                transform: translateY(0);
+            }
+
+            .alphabet-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+                gap: 10px;
+                max-width: 800px;
+                margin-top: 20px;
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 15px;
+                backdrop-filter: blur(10px);
+            }
+
+            .alphabet-btn {
+                aspect-ratio: 1;
+                border: none;
+                border-radius: 10px;
+                font-size: 1.5rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                background: rgba(255, 255, 255, 0.9);
+                color: #2d3436;
+            }
+
+            .alphabet-btn:hover {
+                transform: scale(1.1);
+                background: #00b894;
+                color: white;
+            }
+
+            .alphabet-btn.learned {
+                background: #00b894;
+                color: white;
+            }
+
+            .writing-area {
+                width: 100%;
+                max-width: 400px;
+                height: 200px;
+                background: rgba(255, 255, 255, 0.9);
+                border-radius: 15px;
+                margin: 20px 0;
+                position: relative;
+                border: 3px dashed #ddd;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #636e72;
+                font-size: 1.2rem;
+                cursor: pointer;
+            }
+
+            .celebration {
+                color: #fdcb6e;
+                position: fixed;
+                top: 33%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 3rem;
+                z-index: 1000;
+                pointer-events: none;
+                animation: celebrate 1s ease-out;
+            }
+
+            @keyframes celebrate {
+                0% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(0);
+                }
+                50% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1.2);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+            }
+
+            .target-score-setting {
+                margin-top: 10px;
+                font-size: 0.9rem;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .target-score-setting input {
+                width: 80px;
+                padding: 5px;
+                border: none;
+                border-radius: 5px;
+                text-align: center;
+                font-weight: bold;
+            }
+
+            .set-target-btn {
+                padding: 5px 12px;
+                border: none;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.9);
+                color: #2d3436;
+                font-weight: bold;
+                cursor: pointer;
+                font-size: 0.8rem;
+                transition: all 0.3s ease;
+            }
+
+            .set-target-btn:hover {
+                background: white;
+                transform: scale(1.05);
+            }
+
+            .victory-celebration {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 2000;
+                animation: victoryFade 0.5s ease-in;
+            }
+
+            .victory-content {
+                background: linear-gradient(135deg, #00b894, #00cec9);
+                padding: 40px;
+                border-radius: 20px;
+                text-align: center;
+                color: white;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            .victory-emoji {
+                font-size: 6rem;
+                margin-bottom: 20px;
+                animation: bounce 1s infinite;
+            }
+
+            .victory-text {
+                font-size: 2rem;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+
+            .victory-score {
+                font-size: 1.5rem;
+                margin-bottom: 30px;
+            }
+
+            .continue-btn {
+                padding: 15px 30px;
+                border: none;
+                border-radius: 15px;
+                font-size: 1.2rem;
+                font-weight: bold;
+                background: white;
+                color: #00b894;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .continue-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            }
+
+            @keyframes victoryFade {
+                from {
+                    opacity: 0;
+                    transform: scale(0.8);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+
+            @media (max-width: 768px) {
+                .header h1 {
+                    font-size: 2rem;
+                }
+                .current-letter {
+                    font-size: 6rem;
+                }
+                .letter-display {
+                    min-width: 250px;
+                    padding: 30px;
+                }
+                .controls {
+                    gap: 15px;
+                }
+                .btn {
+                    padding: 12px 20px;
+                    font-size: 1rem;
+                }
+            }
+
+            .auth-panel {
+                background: rgba(255, 255, 255, 0.1);
+                padding: 15px;
+                margin: 10px auto;
+                border-radius: 15px;
+                max-width: 400px;
+                backdrop-filter: blur(10px);
+            }
+
+            .auth-content {
+                text-align: center;
+            }
+
+            .auth-content h3 {
+                margin-bottom: 15px;
+                color: white;
+                font-size: 1.2rem;
+            }
+
+            .auth-btn {
+                padding: 10px 20px;
+                margin: 5px;
+                border: none;
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.9);
+                color: #2d3436;
+                cursor: pointer;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                font-size: 0.9rem;
+            }
+
+            .auth-btn:hover {
+                transform: scale(1.05);
+                background: white;
+            }
+
+            .auth-btn.small {
+                padding: 5px 10px;
+                font-size: 0.8rem;
+            }
+
+            .user-info {
+                text-align: center;
+                color: white;
+                margin: 10px 0;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <header class="header">
+            <h1>🎓 Навчальний центр! 🎓</h1>
+            <!-- Панель авторизації -->
+            <div class="auth-panel" id="authPanel">
+                <div class="auth-content">
+                    <h3>🔐 Вхід для збереження прогресу</h3>
+                    <button class="auth-btn" onclick="signInAnonymously()">
+                        👤 Увійти як гість
+                    </button>
+                    <button class="auth-btn" onclick="signInWithGoogle()">
+                        📧 Увійти через Google
+                    </button>
+                </div>
+            </div>
+
+            <!-- Інформація про користувача -->
+            <div class="user-info" id="userInfo" style="display: none">
+                <span id="userName"></span>
+                <button class="auth-btn small" onclick="signOut()">
+                    Вийти
+                </button>
+            </div>
+            <!-- Таби для вибору контенту -->
+            <div class="tab-selector">
+                <button
+                    class="tab-btn active"
+                    id="lettersTab"
+                    onclick="switchTab('letters')"
+                >
+                    🔤 Букви
+                </button>
+                <button
+                    class="tab-btn"
+                    id="numbersTab"
+                    onclick="switchTab('numbers')"
+                >
+                    🔢 Цифри
+                </button>
+            </div>
+
+            <div class="mode-selector">
+                <button
+                    class="mode-btn active"
+                    id="learningBtn"
+                    onclick="switchMode('learning')"
+                >
+                    📖 Вивчення
+                </button>
+                <button
+                    class="mode-btn"
+                    id="trainingBtn"
+                    onclick="switchMode('training')"
+                >
+                    🏆 Тренування
+                </button>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <p id="progressText">Прогрес: 0/33</p>
+            <div class="score-display" id="scoreDisplay">Рахунок: 0</div>
+            <div class="target-score-setting">
+                <label for="targetScoreInput">Ціль для дитини: </label>
+                <input
+                    type="number"
+                    id="targetScoreInput"
+                    value="0"
+                    min="0"
+                    max="500"
+                    step="10"
+                    placeholder="0 = без лімітів"
+                />
+                <button class="set-target-btn" onclick="setTargetScore()">
+                    Встановити
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Режим навчання -->
+            <div class="learning-mode active" id="learningMode">
+                <div class="letter-display" id="letterDisplay">
+                    <div class="current-letter" id="currentLetter">А</div>
+                    <div class="emoji-display" id="emojiDisplay">🍎</div>
+                    <div class="letter-info">
+                        <div class="letter-name" id="letterName">А - "А"</div>
+                        <div class="letter-example" id="letterExample">
+                            А як Аист
+                        </div>
+                        <div class="letter-sound" id="letterSound">
+                            Натисни на букву, щоб почути звук!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="playSound()">
+                        🔊 Озвучити
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        onclick="previousLetter()"
+                    >
+                        ⬅️ Попередня
+                    </button>
+                    <button class="btn btn-secondary" onclick="nextLetter()">
+                        ➡️ Наступна
+                    </button>
+                    <button class="btn btn-accent" onclick="markAsLearned()">
+                        ✅ Вивчив!
+                    </button>
+                </div>
+
+                <div
+                    class="writing-area"
+                    id="writingArea"
+                    onclick="practiceWriting()"
+                >
+                    ✏️ Натисни, щоб попрактикувати написання
+                </div>
+
+                <div class="alphabet-grid" id="alphabetGrid"></div>
+            </div>
+
+            <!-- Режим тренування -->
+            <div class="training-mode" id="trainingMode">
+                <div class="question-display" id="questionDisplay">
+                    <div class="question-emoji" id="questionEmoji">🍎</div>
+                    <div class="question-text" id="questionText">
+                        Яка це буква?
+                    </div>
+                </div>
+
+                <div class="answer-options" id="answerOptions">
+                    <!-- Варіанти відповідей будуть додані динамічно -->
+                </div>
+            </div>
+        </main>
+
+        <script>
+            const firebaseConfig = {
+                apiKey: "AIzaSyCcS5HMIhvsHkGq7hjjUYUtuPX8IlWtEs4",
+                authDomain: "lear-9d1be.firebaseapp.com",
+                projectId: "lear-9d1be",
+                storageBucket: "lear-9d1be.firebasestorage.app",
+                messagingSenderId: "739241285252",
+                appId: "1:739241285252:web:b3f725bd09fe165bcc14d1",
+                measurementId: "G-J44H9VDX6K",
+            };
+
+            // Ініціалізація Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const db = firebase.firestore();
+
+            let currentUser = null;
+
+            // Функції авторизації
+            function signInAnonymously() {
+                auth.signInAnonymously()
+                    .then(() => {
+                        showCelebration("👤 Увійшли як гість!");
+                    })
+                    .catch((error) => {
+                        console.error("Помилка входу:", error);
+                        alert("Помилка входу. Спробуйте ще раз.");
+                    });
+            }
+
+            function signInWithGoogle() {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithPopup(provider)
+                    .then(() => {
+                        showCelebration("📧 Успішний вхід через Google!");
+                    })
+                    .catch((error) => {
+                        console.error("Помилка входу через Google:", error);
+                        alert("Помилка входу через Google. Спробуйте ще раз.");
+                    });
+            }
+
+            function signOut() {
+                auth.signOut().then(() => {
+                    showCelebration("👋 До побачення!");
+                    // Очищаємо локальні дані
+                    learnedLetters = [];
+                    learnedNumbers = [];
+                    score = 0;
+                    updateDisplay();
+                    updateProgress();
+                });
+            }
+
+            // Відстежування стану авторизації
+            auth.onAuthStateChanged((user) => {
+                currentUser = user;
+                updateAuthUI();
+
+                if (user) {
+                    loadProgressFromCloud();
+                }
+            });
+
+            function updateAuthUI() {
+                const authPanel = document.getElementById("authPanel");
+                const userInfo = document.getElementById("userInfo");
+                const userName = document.getElementById("userName");
+
+                if (currentUser) {
+                    authPanel.style.display = "none";
+                    userInfo.style.display = "block";
+                    userName.textContent = currentUser.isAnonymous
+                        ? "👤 Гість"
+                        : `📧 ${currentUser.displayName || currentUser.email}`;
+                } else {
+                    authPanel.style.display = "block";
+                    userInfo.style.display = "none";
+                }
+            }
+
+            // Збереження прогресу в хмару
+            async function saveProgressToCloud() {
+                if (!currentUser) return;
+
+                const progress = {
+                    learnedLetters: learnedLetters,
+                    learnedNumbers: learnedNumbers,
+                    score: score,
+                    targetScore: targetScore,
+                    currentTab: currentTab,
+                    lastUpdated:
+                        firebase.firestore.FieldValue.serverTimestamp(),
+                };
+
+                try {
+                    await db
+                        .collection("userProgress")
+                        .doc(currentUser.uid)
+                        .set(progress);
+                    console.log("✅ Прогрес збережено!");
+                } catch (error) {
+                    console.error("❌ Помилка збереження:", error);
+                }
+            }
+
+            // Завантаження прогресу з хмари
+            async function loadProgressFromCloud() {
+                if (!currentUser) return;
+
+                try {
+                    const doc = await db
+                        .collection("userProgress")
+                        .doc(currentUser.uid)
+                        .get();
+
+                    if (doc.exists) {
+                        const data = doc.data();
+                        learnedLetters = data.learnedLetters || [];
+                        learnedNumbers = data.learnedNumbers || [];
+                        score = data.score || 0;
+                        targetScore = data.targetScore || 0;
+                        currentTab = data.currentTab || "letters";
+
+                        // Оновлюємо поле цільового рахунку
+                        document.getElementById("targetScoreInput").value =
+                            targetScore;
+
+                        updateDisplay();
+                        updateProgress();
+                        showCelebration("📥 Прогрес завантажено!");
+                    }
+                } catch (error) {
+                    console.error("❌ Помилка завантаження:", error);
+                }
+            }
+
+            const ukrainianAlphabet = [
+                {
+                    letter: "А",
+                    name: "А",
+                    sound: "а",
+                    emoji: "🍍",
+                    word: "Ананас",
+                    example: "А — ананас 🍍",
+                },
+                {
+                    letter: "Б",
+                    name: "Бе",
+                    sound: "б",
+                    emoji: "🐝",
+                    word: "Бджола",
+                    example: "Б — бджола 🐝",
+                },
+                {
+                    letter: "В",
+                    name: "Ве",
+                    sound: "в",
+                    emoji: "🐻",
+                    word: "Ведмідь",
+                    example: "В — ведмідь 🐻",
+                },
+                {
+                    letter: "Г",
+                    name: "Ге",
+                    sound: "г",
+                    emoji: "🎃",
+                    word: "Гарбуз",
+                    example: "Г — гарбуз 🎃",
+                },
+                {
+                    letter: "Ґ",
+                    name: "Ґе",
+                    sound: "ґ",
+                    emoji: "🔘",
+                    word: "Ґудзик",
+                    example: "Ґ — ґудзик 🔘",
+                },
+                {
+                    letter: "Д",
+                    name: "Де",
+                    sound: "д",
+                    emoji: "🍈",
+                    word: "Диня",
+                    example: "Д — диня 🍈",
+                },
+                {
+                    letter: "Е",
+                    name: "Е",
+                    sound: "е",
+                    emoji: "🚜",
+                    word: "Екскаватор",
+                    example: "Е — екскаватор 🚜",
+                },
+                {
+                    letter: "Є",
+                    name: "Є",
+                    sound: "є",
+                    emoji: "🦝",
+                    word: "Єнот",
+                    example: "Є — єнот 🦝",
+                },
+                {
+                    letter: "Ж",
+                    name: "Же",
+                    sound: "ж",
+                    emoji: "🦒",
+                    word: "Жирафа",
+                    example: "Ж — жирафа 🦒",
+                },
+                {
+                    letter: "З",
+                    name: "Зе",
+                    sound: "з",
+                    emoji: "🐍",
+                    word: "Змія",
+                    example: "З — змія 🐍",
+                },
+                {
+                    letter: "И",
+                    name: "И",
+                    sound: "и",
+                    emoji: "🍬",
+                    word: "Ириска",
+                    example: "И — іриска 🍬",
+                },
+                {
+                    letter: "І",
+                    name: "І",
+                    sound: "і",
+                    emoji: "🧸",
+                    word: "Іграшка",
+                    example: "І — іграшка 🧸",
+                },
+                {
+                    letter: "Ї",
+                    name: "Ї",
+                    sound: "ї",
+                    emoji: "🦔",
+                    word: "Їжак",
+                    example: "Ї — їжак 🦔",
+                },
+                {
+                    letter: "Й",
+                    name: "Йот",
+                    sound: "й",
+                    emoji: "🥛",
+                    word: "Йогурт",
+                    example: "Й — йогурт 🥛",
+                },
+                {
+                    letter: "К",
+                    name: "Ка",
+                    sound: "к",
+                    emoji: "🐱",
+                    word: "Кішка",
+                    example: "К — кішка 🐱",
+                },
+                {
+                    letter: "Л",
+                    name: "Ел",
+                    sound: "л",
+                    emoji: "🍋",
+                    word: "Лимон",
+                    example: "Л — лимон 🍋",
+                },
+                {
+                    letter: "М",
+                    name: "Ем",
+                    sound: "м",
+                    emoji: "⚽",
+                    word: "М’яч",
+                    example: "М — м’яч ⚽",
+                },
+                {
+                    letter: "Н",
+                    name: "Ен",
+                    sound: "н",
+                    emoji: "🦏",
+                    word: "Носоріг",
+                    example: "Н — носоріг 🦏",
+                },
+                {
+                    letter: "О",
+                    name: "О",
+                    sound: "о",
+                    emoji: "✏️",
+                    word: "Олівець",
+                    example: "О — олівець ✏️",
+                },
+                {
+                    letter: "П",
+                    name: "Пе",
+                    sound: "п",
+                    emoji: "🐼",
+                    word: "Панда",
+                    example: "П — панда 🐼",
+                },
+                {
+                    letter: "Р",
+                    name: "Ер",
+                    sound: "р",
+                    emoji: "🐟",
+                    word: "Рибка",
+                    example: "Р — рибка 🐟",
+                },
+                {
+                    letter: "С",
+                    name: "Ес",
+                    sound: "с",
+                    emoji: "☀️",
+                    word: "Сонце",
+                    example: "С — сонце ☀️",
+                },
+                {
+                    letter: "Т",
+                    name: "Те",
+                    sound: "т",
+                    emoji: "🐯",
+                    word: "Тигр",
+                    example: "Т — тигр 🐯",
+                },
+                {
+                    letter: "У",
+                    name: "У",
+                    sound: "у",
+                    emoji: "🌪️",
+                    word: "Ураган",
+                    example: "У — ураган 🌪️",
+                },
+                {
+                    letter: "Ф",
+                    name: "Еф",
+                    sound: "ф",
+                    emoji: "🦩",
+                    word: "Фламінго",
+                    example: "Ф — фламінго 🦩",
+                },
+                {
+                    letter: "Х",
+                    name: "Ха",
+                    sound: "х",
+                    emoji: "☁️",
+                    word: "Хмаринка",
+                    example: "Х — хмаринка ☁️",
+                },
+                {
+                    letter: "Ц",
+                    name: "Це",
+                    sound: "ц",
+                    emoji: "🍭",
+                    word: "Цукерка",
+                    example: "Ц — цукерка 🍭",
+                },
+                {
+                    letter: "Ч",
+                    name: "Че",
+                    sound: "ч",
+                    emoji: "🐢",
+                    word: "Черепаха",
+                    example: "Ч — черепаха 🐢",
+                },
+                {
+                    letter: "Ш",
+                    name: "Ша",
+                    sound: "ш",
+                    emoji: "🍫",
+                    word: "Шоколад",
+                    example: "Ш — шоколад 🍫",
+                },
+                {
+                    letter: "Щ",
+                    name: "Ща",
+                    sound: "щ",
+                    emoji: "🐶",
+                    word: "Щеня",
+                    example: "Щ — щеня 🐶",
+                },
+                {
+                    letter: "Ь",
+                    name: "М’який знак",
+                    sound: "ь",
+                    emoji: "🐴",
+                    word: "М’який знак",
+                    example: "Ь — м’який знак 🐴",
+                },
+                {
+                    letter: "Ю",
+                    name: "Ю",
+                    sound: "ю",
+                    emoji: "🪐",
+                    word: "Юпітер",
+                    example: "Ю — юпітер 🪐",
+                },
+                {
+                    letter: "Я",
+                    name: "Я",
+                    sound: "я",
+                    emoji: "🍓",
+                    word: "Ягода",
+                    example: "Я — ягода 🍓",
+                },
+            ];
+            const ukrainianNumbers = [
+                {
+                    number: "0",
+                    name: "нуль",
+                    emoji: "0️⃣",
+                    word: "Нуль",
+                    example: "0 — нуль 0️⃣",
+                },
+                {
+                    number: "1",
+                    name: "один",
+                    emoji: "1️⃣",
+                    word: "Один",
+                    example: "1 — один 1️⃣",
+                },
+                {
+                    number: "2",
+                    name: "два",
+                    emoji: "2️⃣",
+                    word: "Два",
+                    example: "2 — два 2️⃣",
+                },
+                {
+                    number: "3",
+                    name: "три",
+                    emoji: "3️⃣",
+                    word: "Три",
+                    example: "3 — три 3️⃣",
+                },
+                {
+                    number: "4",
+                    name: "чотири",
+                    emoji: "4️⃣",
+                    word: "Чотири",
+                    example: "4 — чотири 4️⃣",
+                },
+                {
+                    number: "5",
+                    name: "п'ять",
+                    emoji: "5️⃣",
+                    word: "П'ять",
+                    example: "5 — п'ять 5️⃣",
+                },
+                {
+                    number: "6",
+                    name: "шість",
+                    emoji: "6️⃣",
+                    word: "Шість",
+                    example: "6 — шість 6️⃣",
+                },
+                {
+                    number: "7",
+                    name: "сім",
+                    emoji: "7️⃣",
+                    word: "Сім",
+                    example: "7 — сім 7️⃣",
+                },
+                {
+                    number: "8",
+                    name: "вісім",
+                    emoji: "8️⃣",
+                    word: "Вісім",
+                    example: "8 — вісім 8️⃣",
+                },
+                {
+                    number: "9",
+                    name: "дев'ять",
+                    emoji: "9️⃣",
+                    word: "Дев'ять",
+                    example: "9 — дев'ять 9️⃣",
+                },
+                {
+                    number: "10",
+                    name: "десять",
+                    emoji: "🔟",
+                    word: "Десять",
+                    example: "10 — десять 🔟",
+                },
+            ];
+
+            let currentIndex = 0;
+            let learnedLetters = [];
+            let currentMode = "learning";
+            let score = 0;
+            let currentQuestion = null;
+            let isAutoPlay = false;
+            let buttonsLocked = false;
+            let selectedVoice = null;
+            let shuffledAlphabet = [];
+            let targetScore = 0; // За замовчуванням 0 = без лімітів
+            let celebrationAudio = null;
+            let currentTab = "letters"; // 'letters' або 'numbers'
+            let shuffledNumbers = [];
+            let learnedNumbers = [];
+
+            function shuffleAlphabet() {
+                // Створюємо копію оригінального алфавіту
+                shuffledAlphabet = [...ukrainianAlphabet];
+
+                // Перемішуємо за алгоритмом Fisher-Yates
+                for (let i = shuffledAlphabet.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledAlphabet[i], shuffledAlphabet[j]] = [
+                        shuffledAlphabet[j],
+                        shuffledAlphabet[i],
+                    ];
+                }
+            }
+
+            function shuffleNumbers() {
+                // Створюємо копію оригінального масиву цифр
+                shuffledNumbers = [...ukrainianNumbers];
+
+                // Перемішуємо за алгоритмом Fisher-Yates
+                for (let i = shuffledNumbers.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledNumbers[i], shuffledNumbers[j]] = [
+                        shuffledNumbers[j],
+                        shuffledNumbers[i],
+                    ];
+                }
+            }
+
+            function getCurrentArray() {
+                return currentTab === "letters"
+                    ? shuffledAlphabet
+                    : shuffledNumbers;
+            }
+
+            function getCurrentLearnedArray() {
+                return currentTab === "letters"
+                    ? learnedLetters
+                    : learnedNumbers;
+            }
+
+            function initializeVoices() {
+                const voices = speechSynthesis.getVoices();
+
+                // Шукаємо українські голоси
+                const ukrainianVoices = voices.filter(
+                    (voice) =>
+                        voice.lang.includes("uk") ||
+                        voice.name.toLowerCase().includes("ukrain"),
+                );
+
+                // Якщо є українські голоси, вибираємо перший
+                if (ukrainianVoices.length > 0) {
+                    selectedVoice = ukrainianVoices[0];
+                } else {
+                    // Якщо немає українських, шукаємо жіночі голоси
+                    const femaleVoices = voices.filter(
+                        (voice) =>
+                            voice.name.toLowerCase().includes("female") ||
+                            voice.name.toLowerCase().includes("woman") ||
+                            voice.name.toLowerCase().includes("anna") ||
+                            voice.name.toLowerCase().includes("maria"),
+                    );
+
+                    if (femaleVoices.length > 0) {
+                        selectedVoice = femaleVoices[0];
+                    } else {
+                        // Використовуємо перший доступний голос
+                        selectedVoice = voices[0];
+                    }
+                }
+
+                console.log("Обраний голос:", selectedVoice?.name);
+            }
+
+            function generateQuestion() {
+                // Розблоковуємо кнопки для нового питання
+                buttonsLocked = false;
+
+                // Вибираємо випадковий елемент з поточного масиву
+                const originalArray = getOriginalArray();
+                const randomIndex = Math.floor(
+                    Math.random() * originalArray.length,
+                );
+                const correctItem = originalArray[randomIndex];
+
+                currentQuestion = correctItem;
+
+                // Оновлюємо відображення питання
+                document.getElementById("questionEmoji").textContent =
+                    correctItem.emoji;
+                const questionType =
+                    currentTab === "letters" ? "букву" : "цифру";
+                document.getElementById("questionText").textContent =
+                    `Яка це ${questionType}? (${correctItem.word})`;
+
+                // Озвучуємо слово емодзі при появі нового питання
+                if ("speechSynthesis" in window) {
+                    const utterance = new SpeechSynthesisUtterance(
+                        correctItem.word,
+                    );
+                    utterance.lang = "uk-UA";
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.2;
+
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+
+                    speechSynthesis.speak(utterance);
+                }
+
+                // Додаємо візуальний ефект до емодзі при озвучуванні
+                const emoji = document.getElementById("questionEmoji");
+                emoji.style.transform = "scale(1.2)";
+                emoji.style.filter = "brightness(1.3)";
+
+                setTimeout(() => {
+                    emoji.style.transform = "scale(1)";
+                    emoji.style.filter = "brightness(1)";
+                }, 800);
+
+                // Генеруємо варіанти відповідей
+                generateAnswerOptions(correctItem);
+            }
+
+            function getOriginalArray() {
+                return currentTab === "letters"
+                    ? ukrainianAlphabet
+                    : ukrainianNumbers;
+            }
+
+            function generateAnswerOptions(correctItem) {
+                const options = [correctItem];
+                const originalArray = getOriginalArray();
+
+                // Додаємо 4 неправильні варіанти
+                while (options.length < 5) {
+                    const randomItem =
+                        originalArray[
+                            Math.floor(Math.random() * originalArray.length)
+                        ];
+
+                    // Перевіряємо, щоб варіант не повторювався
+                    const correctValue =
+                        currentTab === "letters"
+                            ? correctItem.letter
+                            : correctItem.number;
+                    const randomValue =
+                        currentTab === "letters"
+                            ? randomItem.letter
+                            : randomItem.number;
+                    const isDuplicate = options.some((option) => {
+                        const optionValue =
+                            currentTab === "letters"
+                                ? option.letter
+                                : option.number;
+                        return optionValue === randomValue;
+                    });
+
+                    if (!isDuplicate) {
+                        options.push(randomItem);
+                    }
+                }
+
+                // Перемішуємо варіанти для випадкового розташування
+                options.sort(() => Math.random() - 0.5);
+
+                // Очищуємо контейнер та створюємо нові кнопки
+                const container = document.getElementById("answerOptions");
+                container.innerHTML = "";
+
+                options.forEach((option) => {
+                    const btn = document.createElement("button");
+                    btn.className = "answer-btn";
+                    btn.textContent =
+                        currentTab === "letters"
+                            ? option.letter
+                            : option.number;
+                    btn.onclick = () => checkAnswer(option, btn);
+
+                    // Додаємо hover ефект
+                    btn.addEventListener("mouseenter", () => {
+                        if (!buttonsLocked) {
+                            btn.style.transform = "scale(1.1)";
+                        }
+                    });
+
+                    btn.addEventListener("mouseleave", () => {
+                        if (!buttonsLocked) {
+                            btn.style.transform = "scale(1)";
+                        }
+                    });
+
+                    container.appendChild(btn);
+                });
+            }
+
+            function checkAnswer(selectedItem, buttonElement) {
+                // Перевіряємо, чи не заблоковані кнопки
+                if (buttonsLocked) {
+                    return;
+                }
+
+                // Блокуємо всі кнопки після першого натискання
+                buttonsLocked = true;
+                const allButtons = document.querySelectorAll(".answer-btn");
+                allButtons.forEach((btn) => {
+                    btn.disabled = true;
+                    btn.style.opacity = "0.6";
+                    btn.style.cursor = "not-allowed";
+                });
+
+                const currentValue =
+                    currentTab === "letters"
+                        ? selectedItem.letter
+                        : selectedItem.number;
+                const correctValue =
+                    currentTab === "letters"
+                        ? currentQuestion.letter
+                        : currentQuestion.number;
+                const isCorrect = currentValue === correctValue;
+
+                if (isCorrect) {
+                    // Зелений колір для правильної відповіді
+                    buttonElement.style.backgroundColor = "#00b894";
+                    buttonElement.style.color = "white";
+                    buttonElement.classList.add("correct");
+                    score += 10;
+                    showCelebration("🎉 Правильно! 🎉");
+                    saveProgressToCloud();
+                    setTimeout(() => {
+                        generateQuestion();
+                    }, 1500);
+                } else {
+                    // Червоний колір для неправильної відповіді
+                    buttonElement.style.backgroundColor = "#e17055";
+                    buttonElement.style.color = "white";
+                    buttonElement.classList.add("incorrect");
+                    score = Math.max(0, score - 5);
+                    showCelebration("❌ Спробуй ще раз!");
+                    saveProgressToCloud();
+
+                    // НЕ показуємо правильну відповідь
+                    setTimeout(() => {
+                        generateQuestion();
+                    }, 1500);
+                }
+
+                updateProgress();
+            }
+
+            // Додайте цю функцію для озвучування емодзі в режимі тренування
+            function playQuestionEmojiSound() {
+                if (currentQuestion && "speechSynthesis" in window) {
+                    const utterance = new SpeechSynthesisUtterance(
+                        currentQuestion.word,
+                    );
+                    utterance.lang = "uk-UA";
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.2;
+                    speechSynthesis.speak(utterance);
+
+                    // Візуальний ефект
+                    const emoji = document.getElementById("questionEmoji");
+                    emoji.style.transform = "scale(1.3)";
+                    emoji.style.filter = "brightness(1.3)";
+
+                    setTimeout(() => {
+                        emoji.style.transform = "scale(1)";
+                        emoji.style.filter = "brightness(1)";
+                    }, 600);
+                }
+            }
+
+            function switchMode(mode) {
+                currentMode = mode;
+
+                // Оновлюємо кнопки режимів
+                document
+                    .getElementById("learningBtn")
+                    .classList.toggle("active", mode === "learning");
+                document
+                    .getElementById("trainingBtn")
+                    .classList.toggle("active", mode === "training");
+
+                // Показуємо/ховаємо режими
+                document
+                    .getElementById("learningMode")
+                    .classList.toggle("active", mode === "learning");
+                document
+                    .getElementById("trainingMode")
+                    .classList.toggle("active", mode === "training");
+
+                // Показуємо/ховаємо рахунок залежно від режиму
+                const scoreDisplay = document.getElementById("scoreDisplay");
+                if (mode === "training") {
+                    scoreDisplay.style.display = "block";
+                    generateQuestion();
+                } else {
+                    scoreDisplay.style.display = "none";
+                    updateDisplay();
+                }
+            }
+
+            function updateDisplay() {
+                const current = getCurrentArray()[currentIndex];
+                const displayValue =
+                    currentTab === "letters" ? current.letter : current.number;
+
+                document.getElementById("currentLetter").textContent =
+                    displayValue;
+                document.getElementById("emojiDisplay").textContent =
+                    current.emoji;
+                document.getElementById("letterName").textContent =
+                    `${displayValue} - "${current.name}"`;
+                document.getElementById("letterExample").textContent =
+                    current.example;
+                document.getElementById("letterSound").textContent =
+                    `Натисни на ${currentTab === "letters" ? "букву" : "цифру"} або емодзі!`;
+
+                updateProgress();
+                updateAlphabetGrid();
+            }
+
+            function updateProgress() {
+                const learned = getCurrentLearnedArray().length;
+                const total = getCurrentArray().length;
+                const percentage = (learned / total) * 100;
+
+                document.getElementById("progressFill").style.width =
+                    percentage + "%";
+                document.getElementById("progressText").textContent =
+                    `Прогрес: ${learned}/${total}`;
+
+                // Показуємо рахунок тільки в режимі тренування
+                if (currentMode === "training") {
+                    if (targetScore > 0) {
+                        document.getElementById("scoreDisplay").textContent =
+                            `Рахунок: ${score}/${targetScore}`;
+
+                        // Перевіряємо, чи досягнута ціль
+                        if (score >= targetScore) {
+                            setTimeout(() => {
+                                showVictoryScreen();
+                            }, 500);
+                        }
+                    } else {
+                        document.getElementById("scoreDisplay").textContent =
+                            `Рахунок: ${score}`;
+                    }
+                } else {
+                    // В режимі навчання не показуємо рахунок
+                    document.getElementById("scoreDisplay").style.display =
+                        "none";
+                }
+            }
+
+            function updateAlphabetGrid() {
+                const grid = document.getElementById("alphabetGrid");
+                grid.innerHTML = "";
+
+                // Використовуємо поточний масив залежно від табу
+                const originalArray = getOriginalArray();
+                const learnedArray = getCurrentLearnedArray();
+                const currentArray = getCurrentArray();
+
+                originalArray.forEach((item, index) => {
+                    const btn = document.createElement("button");
+                    btn.className = "alphabet-btn";
+                    btn.textContent =
+                        currentTab === "letters" ? item.letter : item.number;
+                    btn.onclick = () => {
+                        // Знаходимо індекс цього елемента в перемішаному масиві
+                        const displayValue =
+                            currentTab === "letters"
+                                ? item.letter
+                                : item.number;
+                        const shuffledIndex = currentArray.findIndex(
+                            (shuffledItem) => {
+                                const shuffledValue =
+                                    currentTab === "letters"
+                                        ? shuffledItem.letter
+                                        : shuffledItem.number;
+                                return shuffledValue === displayValue;
+                            },
+                        );
+                        if (shuffledIndex !== -1) {
+                            currentIndex = shuffledIndex;
+                            updateDisplay();
+                            playSound();
+                        }
+                    };
+
+                    const itemValue =
+                        currentTab === "letters" ? item.letter : item.number;
+                    if (learnedArray.includes(itemValue)) {
+                        btn.classList.add("learned");
+                    }
+
+                    grid.appendChild(btn);
+                });
+            }
+
+            function switchTab(tab) {
+                currentTab = tab;
+
+                // Оновлюємо кнопки табів
+                document
+                    .getElementById("lettersTab")
+                    .classList.toggle("active", tab === "letters");
+                document
+                    .getElementById("numbersTab")
+                    .classList.toggle("active", tab === "numbers");
+
+                // Скидаємо індекс
+                currentIndex = 0;
+
+                // Перемішуємо відповідний контент
+                if (tab === "letters") {
+                    shuffleAlphabet();
+                } else {
+                    shuffleNumbers();
+                }
+
+                // Оновлюємо відображення
+                updateDisplay();
+                updateProgress();
+            }
+
+            function playSound() {
+                const current = getCurrentArray()[currentIndex];
+                const displayValue =
+                    currentTab === "letters" ? current.letter : current.number;
+
+                if ("speechSynthesis" in window) {
+                    const utterance = new SpeechSynthesisUtterance(
+                        `${displayValue}. ${current.word}.`,
+                    );
+                    utterance.lang = "uk-UA";
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1.1;
+
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+
+                    speechSynthesis.speak(utterance);
+                }
+
+                // Додаємо візуальний ефект до букви/цифри
+                const letter = document.getElementById("currentLetter");
+                letter.style.transform = "scale(1.2)";
+                letter.style.color = "#00b894";
+
+                // Додаємо ефект до емодзі
+                const emoji = document.getElementById("emojiDisplay");
+                emoji.style.transform = "scale(1.3)";
+
+                setTimeout(() => {
+                    letter.style.transform = "scale(1)";
+                    letter.style.color = "#2d3436";
+                    emoji.style.transform = "scale(1)";
+                }, 500);
+            }
+
+            function createCelebrationMusic() {
+                try {
+                    // Створюємо веселу мелодію за допомогою Web Audio API
+                    const audioContext = new (window.AudioContext ||
+                        window.webkitAudioContext)();
+
+                    // Ноти для веселої мелодії (До мажор)
+                    const notes = [
+                        { freq: 523.25, duration: 0.3 }, // До
+                        { freq: 587.33, duration: 0.3 }, // Ре
+                        { freq: 659.25, duration: 0.3 }, // Мі
+                        { freq: 698.46, duration: 0.3 }, // Фа
+                        { freq: 783.99, duration: 0.6 }, // Соль
+                        { freq: 698.46, duration: 0.3 }, // Фа
+                        { freq: 659.25, duration: 0.3 }, // Мі
+                        { freq: 587.33, duration: 0.3 }, // Ре
+                        { freq: 523.25, duration: 0.6 }, // До
+                    ];
+
+                    let currentTime = audioContext.currentTime;
+
+                    notes.forEach((note) => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+
+                        oscillator.frequency.setValueAtTime(
+                            note.freq,
+                            currentTime,
+                        );
+                        oscillator.type = "triangle";
+
+                        gainNode.gain.setValueAtTime(0, currentTime);
+                        gainNode.gain.linearRampToValueAtTime(
+                            0.3,
+                            currentTime + 0.01,
+                        );
+                        gainNode.gain.exponentialRampToValueAtTime(
+                            0.01,
+                            currentTime + note.duration,
+                        );
+
+                        oscillator.start(currentTime);
+                        oscillator.stop(currentTime + note.duration);
+
+                        currentTime += note.duration;
+                    });
+                } catch (error) {
+                    console.log("Музика недоступна в цьому браузері");
+                }
+            }
+
+            function showVictoryScreen() {
+                const victoryScreen = document.createElement("div");
+                victoryScreen.className = "victory-celebration";
+                victoryScreen.innerHTML = `
+                    <div class="victory-content">
+                        <div class="victory-emoji">🎉🏆🎊</div>
+                        <div class="victory-text">Вітаємо! Ціль досягнута!</div>
+                        <div class="victory-score">Ви набрали ${score} поїнтів!</div>
+                        <button class="continue-btn" onclick="closeVictoryScreen()">
+                            Продовжити навчання
+                        </button>
+                    </div>
+                `;
+
+                document.body.appendChild(victoryScreen);
+
+                // Запускаємо святкову музику
+                createCelebrationMusic();
+
+                // Повторюємо музику кілька разів
+                setTimeout(() => createCelebrationMusic(), 1000);
+                setTimeout(() => createCelebrationMusic(), 2000);
+            }
+
+            function closeVictoryScreen() {
+                const victoryScreen = document.querySelector(
+                    ".victory-celebration",
+                );
+
+                targetScore = 0;
+
+                if (victoryScreen) {
+                    document.body.removeChild(victoryScreen);
+                }
+            }
+
+            function setTargetScore() {
+                // Складна математична перевірка для батьків
+                const mathQuestion = Math.floor(Math.random() * 10) + 5; // Число від 5 до 14
+                const mathAnswer = mathQuestion * 3; // Складна формула
+
+                const userAnswer = prompt(
+                    `Батьківський контроль:\nОбчисліть: ${mathQuestion} × 3 = ?`,
+                );
+
+                if (parseInt(userAnswer) === mathAnswer) {
+                    const newTarget = parseInt(
+                        document.getElementById("targetScoreInput").value,
+                    );
+                    targetScore = newTarget;
+
+                    if (targetScore === 0) {
+                        showCelebration("⚙️ Встановлено: без лімітів поїнтів");
+                    } else {
+                        showCelebration(
+                            `⚙️ Встановлено ціль: ${targetScore} поїнтів`,
+                        );
+                    }
+
+                    updateProgress();
+                } else {
+                    alert(
+                        "Неправильна відповідь! Тільки батьки можуть змінювати налаштування.",
+                    );
+                    // Повертаємо попереднє значення
+                    document.getElementById("targetScoreInput").value =
+                        targetScore;
+                }
+            }
+
+            function playEmojiSound() {
+                const current = getCurrentArray()[currentIndex];
+
+                if ("speechSynthesis" in window) {
+                    const utterance = new SpeechSynthesisUtterance(
+                        current.word,
+                    );
+                    utterance.lang = "uk-UA";
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.2;
+
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+
+                    speechSynthesis.speak(utterance);
+                }
+
+                // Візуальний ефект для емодзі
+                const emoji = document.getElementById("emojiDisplay");
+                emoji.style.transform = "scale(1.4)";
+                emoji.style.filter = "brightness(1.2)";
+
+                setTimeout(() => {
+                    emoji.style.transform = "scale(1)";
+                    emoji.style.filter = "brightness(1)";
+                }, 600);
+            }
+
+            function playQuestionEmojiSound() {
+                if (currentQuestion && "speechSynthesis" in window) {
+                    const utterance = new SpeechSynthesisUtterance(
+                        currentQuestion.word,
+                    );
+                    utterance.lang = "uk-UA";
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.2;
+
+                    // Використовуємо обраний голос
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+
+                    speechSynthesis.speak(utterance);
+
+                    // Візуальний ефект
+                    const emoji = document.getElementById("questionEmoji");
+                    emoji.style.transform = "scale(1.3)";
+                    emoji.style.filter = "brightness(1.3)";
+
+                    setTimeout(() => {
+                        emoji.style.transform = "scale(1)";
+                        emoji.style.filter = "brightness(1)";
+                    }, 600);
+                }
+            }
+
+            function nextLetter() {
+                const currentArray = getCurrentArray();
+                currentIndex = (currentIndex + 1) % currentArray.length;
+                updateDisplay();
+                playSound();
+            }
+
+            function previousLetter() {
+                const currentArray = getCurrentArray();
+                currentIndex =
+                    currentIndex === 0
+                        ? currentArray.length - 1
+                        : currentIndex - 1;
+                updateDisplay();
+                playSound();
+            }
+
+            function markAsLearned() {
+                const current = getCurrentArray()[currentIndex];
+                const currentValue =
+                    currentTab === "letters" ? current.letter : current.number;
+                const learnedArray = getCurrentLearnedArray();
+
+                if (!learnedArray.includes(currentValue)) {
+                    learnedArray.push(currentValue);
+
+                    const itemType =
+                        currentTab === "letters" ? "букву" : "цифру";
+                    showCelebration(
+                        `✅ Молодець! ${itemType.charAt(0).toUpperCase() + itemType.slice(1)} вивчено!`,
+                    );
+                    updateProgress();
+
+                    // Автоматично зберігаємо прогрес
+                    saveProgressToCloud();
+
+                    setTimeout(() => {
+                        nextLetter();
+                    }, 1500);
+                } else {
+                    const itemType =
+                        currentTab === "letters" ? "буква" : "цифра";
+                    showCelebration(`📚 Ця ${itemType} вже вивчена!`);
+                }
+            }
+
+            function showCelebration(message = "🎉 Молодець! 🎉") {
+                const celebration = document.createElement("div");
+                celebration.className = "celebration";
+                celebration.textContent = message;
+
+                // Встановлюємо різні кольори залежно від повідомлення
+                if (message.includes("Правильно")) {
+                    celebration.style.color = "#00b894"; // Зелений для правильних відповідей
+                    celebration.style.textShadow =
+                        "2px 2px 4px rgba(0, 184, 148, 0.3)";
+                } else if (message.includes("Спробуй ще раз")) {
+                    celebration.style.color = "#e17055"; // Червоний для неправильних відповідей
+                    celebration.style.textShadow =
+                        "2px 2px 4px rgba(225, 112, 85, 0.3)";
+                } else {
+                    celebration.style.color = "#fdcb6e"; // Жовтий для загальних святкувань
+                    celebration.style.textShadow =
+                        "2px 2px 4px rgba(253, 203, 110, 0.3)";
+                }
+
+                // Додаємо додатковий стиль
+                celebration.style.fontWeight = "bold";
+                celebration.style.fontSize = "3rem";
+
+                document.body.appendChild(celebration);
+
+                setTimeout(() => {
+                    if (document.body.contains(celebration)) {
+                        document.body.removeChild(celebration);
+                    }
+                }, 1000);
+            }
+
+            function practiceWriting() {
+                const writingArea = document.getElementById("writingArea");
+                const current = getCurrentArray()[currentIndex];
+                const currentValue =
+                    currentTab === "letters" ? current.letter : current.number;
+
+                writingArea.innerHTML = `
+                    <div style="font-size: 4rem; color: #ddd; position: absolute; z-index: 1;">${currentValue}</div>
+                    <div style="position: relative; z-index: 2; font-size: 1rem;">
+                        Обведи ${currentTab === "letters" ? "букву" : "цифру"} пальцем або мишкою!<br>
+                        <small>(функція в розробці)</small>
+                    </div>
+                `;
+            }
+
+            // Додаємо можливість натискати на емодзі
+            document.addEventListener("DOMContentLoaded", () => {
+                // При натисканні на емодзі в режимі навчання - озвучуємо тільки слово
+                document
+                    .getElementById("emojiDisplay")
+                    .addEventListener("click", playEmojiSound);
+
+                // При натисканні на емодзі в режимі тренування - озвучуємо слово питання
+                document
+                    .getElementById("questionEmoji")
+                    .addEventListener("click", playQuestionEmojiSound);
+
+                // При натисканні на букву - повна озвучка
+                document
+                    .getElementById("currentLetter")
+                    .addEventListener("click", playSound);
+            });
+
+            // Ініціалізація
+            shuffleAlphabet();
+            shuffleNumbers();
+            updateDisplay();
+
+            // Додаємо підтримку клавіатури
+            document.addEventListener("keydown", (e) => {
+                switch (e.key) {
+                    case "ArrowLeft":
+                        previousLetter();
+                        break;
+                    case "ArrowRight":
+                        nextLetter();
+                        break;
+                    case " ":
+                        e.preventDefault();
+                        playSound();
+                        break;
+                    case "Enter":
+                        markAsLearned();
+                        break;
+                }
+            });
+
+            // Підтримка touch подій для мобільних
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            document.addEventListener("touchstart", (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+
+            document.addEventListener("touchend", (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+
+            function handleSwipe() {
+                const swipeThreshold = 50;
+                const diff = touchStartX - touchEndX;
+
+                if (Math.abs(diff) > swipeThreshold) {
+                    if (diff > 0) {
+                        nextLetter(); // Свайп вліво = наступна буква
+                    } else {
+                        previousLetter(); // Свайп вправо = попередня буква
+                    }
+                }
+            }
+
+            speechSynthesis.addEventListener("voiceschanged", initializeVoices);
+            initializeVoices(); // Викликаємо одразу на випадок, якщо голоси вже завантажені
+        </script>
+    </body>
+</html>
