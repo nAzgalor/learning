@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Навчальний центр! 📚🎓</title>
+        <title>Навчальний центр! 🎓</title>
         <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
@@ -398,7 +398,6 @@
             }
 
             .celebration {
-                color: #fdcb6e;
                 position: fixed;
                 top: 33%;
                 left: 50%;
@@ -406,21 +405,51 @@
                 font-size: 3rem;
                 z-index: 1000;
                 pointer-events: none;
-                animation: celebrate 1s ease-out;
+                text-align: center;
+                max-width: 80%;
+                word-wrap: break-word;
+                padding: 10px;
+                background: rgba(0, 0, 0, 0.7);
+                border-radius: 15px;
+                animation: fadeInOut 3s ease forwards;
             }
 
-            @keyframes celebrate {
+            /* Зелений для правильних відповідей */
+            .celebration.correct {
+                color: #00b894;
+                text-shadow: 2px 2px 4px rgba(0, 184, 148, 0.3);
+            }
+
+            /* Червоний для неправильних відповідей */
+            .celebration.incorrect {
+                color: #e17055;
+                text-shadow: 2px 2px 4px rgba(225, 112, 85, 0.3);
+                font-size: 2rem;
+            }
+
+            /* Жовтий для загальних повідомлень */
+            .celebration.general {
+                color: #fdcb6e;
+                text-shadow: 2px 2px 4px rgba(253, 203, 110, 0.3);
+            }
+
+            /* Плавна анімація */
+            @keyframes fadeInOut {
                 0% {
                     opacity: 0;
-                    transform: translate(-50%, -50%) scale(0);
+                    transform: translate(-50%, -50%) scale(0.8);
                 }
-                50% {
+                10% {
                     opacity: 1;
-                    transform: translate(-50%, -50%) scale(1.2);
+                    transform: translate(-50%, -50%) scale(1);
+                }
+                90% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1);
                 }
                 100% {
                     opacity: 0;
-                    transform: translate(-50%, -50%) scale(1);
+                    transform: translate(-50%, -50%) scale(0.8);
                 }
             }
 
@@ -1442,15 +1471,6 @@
                     return;
                 }
 
-                // Блокуємо всі кнопки після першого натискання
-                buttonsLocked = true;
-                const allButtons = document.querySelectorAll(".answer-btn");
-                allButtons.forEach((btn) => {
-                    btn.disabled = true;
-                    btn.style.opacity = "0.6";
-                    btn.style.cursor = "not-allowed";
-                });
-
                 const currentValue =
                     currentTab === "letters"
                         ? selectedItem.letter
@@ -1462,32 +1482,83 @@
                 const isCorrect = currentValue === correctValue;
 
                 if (isCorrect) {
-                    // Зелений колір для правильної відповіді
+                    // Блокуємо всі кнопки після правильної відповіді
+                    buttonsLocked = true;
+                    const allButtons = document.querySelectorAll(".answer-btn");
+                    allButtons.forEach((btn) => {
+                        btn.disabled = true;
+                        btn.style.opacity = "0.6";
+                        btn.style.cursor = "not-allowed";
+                    });
+
+                    // Зелений колір та анімація для правильної відповіді
                     buttonElement.style.backgroundColor = "#00b894";
                     buttonElement.style.color = "white";
                     buttonElement.classList.add("correct");
+
+                    // Озвучуємо правильну відповідь
+                    if ("speechSynthesis" in window) {
+                        const utterance = new SpeechSynthesisUtterance(
+                            `${currentValue}. ${selectedItem.word}. Вірно!`,
+                        );
+                        utterance.lang = "uk-UA";
+                        utterance.rate = 0.8;
+                        utterance.pitch = 1.1;
+
+                        if (selectedVoice) {
+                            utterance.voice = selectedVoice;
+                        }
+
+                        speechSynthesis.speak(utterance);
+                    }
+
                     score += 10;
-                    showCelebration("🎉 Правильно! 🎉");
+                    showCelebration("🎉 Вірно! 🎉", "correct");
                     saveProgressToCloud();
+
                     setTimeout(() => {
                         generateQuestion();
                     }, 1500);
                 } else {
-                    // Червоний колір для неправильної відповіді
+                    // При неправильній відповіді НЕ блокуємо кнопки
+                    // Червоний колір та анімація для неправильної відповіді
                     buttonElement.style.backgroundColor = "#e17055";
                     buttonElement.style.color = "white";
                     buttonElement.classList.add("incorrect");
-                    score = Math.max(0, score - 5);
-                    showCelebration("❌ Спробуй ще раз!");
+
+                    // Озвучуємо неправильно обрану букву/цифру
+                    if ("speechSynthesis" in window) {
+                        const utterance = new SpeechSynthesisUtterance(
+                            `${currentValue}. ${selectedItem.word}. Спробуй ще раз!`,
+                        );
+                        utterance.lang = "uk-UA";
+                        utterance.rate = 0.8;
+                        utterance.pitch = 1.1;
+
+                        if (selectedVoice) {
+                            utterance.voice = selectedVoice;
+                        }
+
+                        speechSynthesis.speak(utterance);
+                    }
+
+                    score = Math.max(0, score - 2);
+                    showCelebration(
+                        `❌ Це ${currentValue} (${selectedItem.word}). Спробуй ще раз!`,
+                        "incorrect",
+                    );
                     saveProgressToCloud();
 
-                    // НЕ показуємо правильну відповідь
+                    // Через 2 секунди повертаємо кнопку до нормального стану
                     setTimeout(() => {
-                        generateQuestion();
-                    }, 1500);
-                }
+                        buttonElement.style.backgroundColor =
+                            "rgba(255, 255, 255, 0.9)";
+                        buttonElement.style.color = "#2d3436";
+                        buttonElement.classList.remove("incorrect");
+                    }, 2000);
 
-                updateProgress();
+                    updateProgress();
+                }
             }
 
             // Додайте цю функцію для озвучування емодзі в режимі тренування
@@ -1653,18 +1724,19 @@
                     .getElementById("numbersTab")
                     .classList.toggle("active", tab === "numbers");
 
-                // Скидаємо індекс
+                // Скидаємо індекс на початок поточного масиву
                 currentIndex = 0;
 
-                // Перемішуємо відповідний контент
-                if (tab === "letters") {
-                    shuffleAlphabet();
+                // НЕ перемішуємо масиви - вони вже перемішані при завантаженні
+                // Просто оновлюємо відображення залежно від поточного режиму
+                if (currentMode === "training") {
+                    // У режимі тренування генеруємо нове питання
+                    generateQuestion();
                 } else {
-                    shuffleNumbers();
+                    // У режимі навчання оновлюємо звичайне відображення
+                    updateDisplay();
                 }
 
-                // Оновлюємо відображення
-                updateDisplay();
                 updateProgress();
             }
 
@@ -1915,6 +1987,7 @@
                         currentTab === "letters" ? "букву" : "цифру";
                     showCelebration(
                         `✅ Молодець! ${itemType.charAt(0).toUpperCase() + itemType.slice(1)} вивчено!`,
+                        "general",
                     );
                     updateProgress();
 
@@ -1927,41 +2000,30 @@
                 } else {
                     const itemType =
                         currentTab === "letters" ? "буква" : "цифра";
-                    showCelebration(`📚 Ця ${itemType} вже вивчена!`);
+                    showCelebration(
+                        `📚 Ця ${itemType} вже вивчена!`,
+                        "general",
+                    );
                 }
             }
 
-            function showCelebration(message = "🎉 Молодець! 🎉") {
+            function showCelebration(
+                message = "🎉 Молодець! 🎉",
+                type = "general",
+            ) {
                 const celebration = document.createElement("div");
-                celebration.className = "celebration";
+                celebration.className = `celebration ${type}`;
                 celebration.textContent = message;
 
-                // Встановлюємо різні кольори залежно від повідомлення
-                if (message.includes("Правильно")) {
-                    celebration.style.color = "#00b894"; // Зелений для правильних відповідей
-                    celebration.style.textShadow =
-                        "2px 2px 4px rgba(0, 184, 148, 0.3)";
-                } else if (message.includes("Спробуй ще раз")) {
-                    celebration.style.color = "#e17055"; // Червоний для неправильних відповідей
-                    celebration.style.textShadow =
-                        "2px 2px 4px rgba(225, 112, 85, 0.3)";
-                } else {
-                    celebration.style.color = "#fdcb6e"; // Жовтий для загальних святкувань
-                    celebration.style.textShadow =
-                        "2px 2px 4px rgba(253, 203, 110, 0.3)";
-                }
-
-                // Додаємо додатковий стиль
-                celebration.style.fontWeight = "bold";
-                celebration.style.fontSize = "3rem";
-
+                // Додаємо елемент до сторінки
                 document.body.appendChild(celebration);
 
-                setTimeout(() => {
+                // Видаляємо елемент після завершення анімації
+                celebration.addEventListener("animationend", () => {
                     if (document.body.contains(celebration)) {
                         document.body.removeChild(celebration);
                     }
-                }, 1000);
+                });
             }
 
             function practiceWriting() {
@@ -2004,20 +2066,41 @@
 
             // Додаємо підтримку клавіатури
             document.addEventListener("keydown", (e) => {
-                switch (e.key) {
-                    case "ArrowLeft":
-                        previousLetter();
-                        break;
-                    case "ArrowRight":
-                        nextLetter();
-                        break;
-                    case " ":
-                        e.preventDefault();
-                        playSound();
-                        break;
-                    case "Enter":
-                        markAsLearned();
-                        break;
+                // Якщо ми в режимі тренування, блокуємо стрілки та змінюємо логіку пробілу
+                if (currentMode === "training") {
+                    switch (e.key) {
+                        case "ArrowLeft":
+                        case "ArrowRight":
+                            // Блокуємо стрілки в режимі тренування
+                            e.preventDefault();
+                            return;
+                        case " ":
+                            e.preventDefault();
+                            // В режимі тренування пробіл озвучує питання
+                            playQuestionEmojiSound();
+                            break;
+                        case "Enter":
+                            // Enter в тренуванні не робить нічого
+                            e.preventDefault();
+                            return;
+                    }
+                } else {
+                    // В режимі навчання працюють всі клавіші як раніше
+                    switch (e.key) {
+                        case "ArrowLeft":
+                            previousLetter();
+                            break;
+                        case "ArrowRight":
+                            nextLetter();
+                            break;
+                        case " ":
+                            e.preventDefault();
+                            playSound();
+                            break;
+                        case "Enter":
+                            markAsLearned();
+                            break;
+                    }
                 }
             });
 
