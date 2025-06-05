@@ -395,6 +395,7 @@
                 color: #636e72;
                 font-size: 1.2rem;
                 cursor: pointer;
+                text-align: center;
             }
 
             .celebration {
@@ -559,26 +560,6 @@
                 }
             }
 
-            @media (max-width: 768px) {
-                .header h1 {
-                    font-size: 2rem;
-                }
-                .current-letter {
-                    font-size: 6rem;
-                }
-                .letter-display {
-                    min-width: 250px;
-                    padding: 30px;
-                }
-                .controls {
-                    gap: 15px;
-                }
-                .btn {
-                    padding: 12px 20px;
-                    font-size: 1rem;
-                }
-            }
-
             .auth-panel {
                 background: rgba(255, 255, 255, 0.1);
                 padding: 15px;
@@ -626,6 +607,343 @@
                 color: white;
                 margin: 10px 0;
                 font-weight: bold;
+            }
+
+            /* Покращений мобільний дизайн */
+            @media (max-width: 768px) {
+                body {
+                    font-size: 14px;
+                }
+
+                .header {
+                    padding: 15px 10px;
+                }
+
+                .header h1 {
+                    font-size: 1.8rem;
+                    margin-bottom: 15px;
+                }
+
+                /* Таби для букв/цифр */
+                .tab-selector {
+                    gap: 8px;
+                    margin: 8px 0;
+                }
+
+                .tab-btn {
+                    padding: 8px 15px;
+                    font-size: 1rem;
+                }
+
+                /* Режими навчання/тренування */
+                .mode-selector {
+                    gap: 8px;
+                    margin: 10px 0;
+                }
+
+                .mode-btn {
+                    padding: 6px 12px;
+                    font-size: 0.9rem;
+                }
+
+                /* Налаштування цільових поїнтів */
+                .target-score-setting {
+                    flex-direction: column;
+                    gap: 10px;
+                    margin: 15px 0;
+                }
+
+                .target-score-setting input {
+                    width: 100px;
+                    padding: 8px;
+                }
+
+                .set-target-btn {
+                    padding: 8px 16px;
+                    font-size: 0.9rem;
+                }
+
+                /* Основний контент */
+                .main-content {
+                    padding: 15px 10px;
+                }
+
+                /* Режим навчання */
+                .letter-display {
+                    min-width: auto;
+                    width: 95%;
+                    max-width: 350px;
+                    padding: 20px 15px;
+                    margin: 0 auto 20px auto;
+                }
+
+                .current-letter {
+                    font-size: 4.5rem;
+                }
+
+                .emoji-display {
+                    font-size: 3rem;
+                    margin: 10px 0;
+                }
+
+                .letter-name {
+                    font-size: 1.1rem;
+                }
+
+                .letter-example {
+                    font-size: 1.2rem;
+                }
+
+                .letter-sound {
+                    font-size: 0.9rem;
+                }
+
+                /* Кнопки управління */
+                .controls {
+                    gap: 10px;
+                    margin-bottom: 20px;
+                    flex-wrap: wrap;
+                }
+
+                .btn {
+                    padding: 12px 16px;
+                    font-size: 1rem;
+                    min-width: 120px;
+                }
+
+                /* Сітка алфавіту */
+                .alphabet-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+                    gap: 8px;
+                    padding: 15px 10px;
+                    max-width: 100%;
+                }
+
+                .alphabet-btn {
+                    font-size: 1.2rem;
+                    min-height: 45px;
+                }
+
+                /* Режим тренування */
+                .question-display {
+                    min-width: auto;
+                    width: 95%;
+                    max-width: 350px;
+                    padding: 20px 15px;
+                    margin-bottom: 20px;
+                }
+
+                .question-emoji {
+                    font-size: 4rem;
+                    margin: 15px 0;
+                }
+
+                .question-text {
+                    font-size: 1.4rem;
+                    margin-bottom: 15px;
+                }
+
+                /* Варіанти відповідей */
+                .answer-options {
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 12px;
+                    max-width: 280px;
+                    margin: 0 auto;
+                }
+
+                .answer-btn {
+                    font-size: 1.5rem;
+                    min-height: 60px;
+                    border-radius: 12px;
+                }
+
+                /* Область для письма */
+                .writing-area {
+                    max-width: 95%;
+                    height: 150px;
+                    font-size: 1rem;
+                    margin: 15px 0;
+                    text-align: center;
+                }
+
+                /* Повідомлення */
+                .celebration {
+                    font-size: 2rem;
+                    max-width: 90%;
+                    padding: 15px;
+                    top: 30%;
+                }
+
+                .celebration.incorrect {
+                    font-size: 1.5rem;
+                }
+
+                /* Екран перемоги */
+                .victory-content {
+                    padding: 30px 20px;
+                    margin: 0 10px;
+                    max-width: 90%;
+                }
+
+                .victory-emoji {
+                    font-size: 4rem;
+                    margin-bottom: 15px;
+                }
+
+                .victory-text {
+                    font-size: 1.5rem;
+                    margin-bottom: 15px;
+                }
+
+                .victory-score {
+                    font-size: 1.2rem;
+                    margin-bottom: 20px;
+                }
+
+                .continue-btn {
+                    padding: 12px 24px;
+                    font-size: 1rem;
+                }
+
+                /* Авторизація */
+                .auth-panel {
+                    margin: 10px;
+                    padding: 12px;
+                    max-width: 95%;
+                }
+
+                .auth-content h3 {
+                    font-size: 1rem;
+                    margin-bottom: 12px;
+                }
+
+                .auth-btn {
+                    padding: 8px 16px;
+                    margin: 4px;
+                    font-size: 0.85rem;
+                    display: block;
+                    width: 100%;
+                    max-width: 200px;
+                    margin: 8px auto;
+                }
+
+                .user-info {
+                    font-size: 0.9rem;
+                    margin: 8px 0;
+                }
+
+                /* Прогрес бар */
+                .progress-bar {
+                    max-width: 250px;
+                    height: 8px;
+                }
+
+                #progressText {
+                    font-size: 0.9rem;
+                    margin: 8px 0;
+                }
+
+                .score-display {
+                    font-size: 1rem;
+                    margin-top: 8px;
+                }
+            }
+
+            /* Для дуже маленьких екранів */
+            @media (max-width: 480px) {
+                .header h1 {
+                    font-size: 1.5rem;
+                }
+
+                .current-letter {
+                    font-size: 3.5rem !important;
+                }
+
+                .question-emoji {
+                    font-size: 3rem !important;
+                }
+
+                .answer-options {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 10px;
+                    max-width: 200px;
+                }
+
+                .answer-btn {
+                    font-size: 1.2rem;
+                    min-height: 50px;
+                }
+
+                .btn {
+                    padding: 10px 12px;
+                    font-size: 0.9rem;
+                    min-width: 100px;
+                }
+
+                .celebration {
+                    font-size: 1.5rem;
+                }
+
+                .celebration.incorrect {
+                    font-size: 1.2rem;
+                }
+            }
+
+            /* Покращення для touch взаємодії */
+            @media (hover: none) and (pointer: coarse) {
+                .btn:hover,
+                .answer-btn:hover,
+                .alphabet-btn:hover,
+                .tab-btn:hover,
+                .mode-btn:hover {
+                    transform: none;
+                }
+
+                .btn:active,
+                .answer-btn:active,
+                .alphabet-btn:active {
+                    transform: scale(0.95);
+                }
+            }
+
+            /* Горизонтальна орієнтація на мобільних */
+            @media (max-width: 768px) and (orientation: landscape) {
+                .header {
+                    padding: 10px;
+                }
+
+                .header h1 {
+                    font-size: 1.4rem;
+                    margin-bottom: 8px;
+                }
+
+                .main-content {
+                    padding: 10px;
+                }
+
+                .letter-display,
+                .question-display {
+                    padding: 15px;
+                    margin-bottom: 15px;
+                }
+
+                .current-letter {
+                    font-size: 3rem !important;
+                }
+
+                .question-emoji {
+                    font-size: 2.5rem !important;
+                }
+
+                .controls {
+                    gap: 8px;
+                    margin-bottom: 15px;
+                }
+
+                .btn {
+                    padding: 8px 12px;
+                    font-size: 0.85rem;
+                }
             }
         </style>
     </head>
