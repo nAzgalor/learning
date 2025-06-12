@@ -15,6 +15,10 @@ const db = firebase.firestore();
 
 let currentUser = null;
 
+// Додаємо змінні для відстеження завдань
+let lastQuestions = [];
+const MIN_QUESTIONS_BEFORE_REPEAT = 5;
+
 // Функції авторизації
 function signInAnonymously() {
     if (!auth) {
@@ -640,16 +644,38 @@ function generateQuestion() {
 
     // Вибираємо випадковий елемент з поточного масиву
     const originalArray = getOriginalArray();
-    const randomIndex = Math.floor(Math.random() * originalArray.length);
-    const correctItem = originalArray[randomIndex];
+    
+    // Фільтруємо завдання, які не були показані в останніх MIN_QUESTIONS_BEFORE_REPEAT разів
+    let availableQuestions = originalArray.filter(item => {
+        const itemValue = currentTab === "letters" ? item.letter : item.number;
+        return !lastQuestions.includes(itemValue);
+    });
+
+    // Якщо всі завдання вже були показані, скидаємо історію
+    if (availableQuestions.length === 0) {
+        lastQuestions = [];
+        availableQuestions = originalArray;
+    }
+
+    // Вибираємо випадкове завдання з доступних
+    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+    const correctItem = availableQuestions[randomIndex];
+
+    // Додаємо завдання в історію
+    const itemValue = currentTab === "letters" ? correctItem.letter : correctItem.number;
+    lastQuestions.push(itemValue);
+    
+    // Обмежуємо розмір історії
+    if (lastQuestions.length > MIN_QUESTIONS_BEFORE_REPEAT) {
+        lastQuestions.shift();
+    }
 
     currentQuestion = correctItem;
 
     // Оновлюємо відображення питання
     document.getElementById("questionEmoji").textContent = correctItem.emoji;
     const questionType = currentTab === "letters" ? "букву" : "цифру";
-    document.getElementById("questionText").textContent =
-        `Яка це ${questionType}? (${correctItem.word})`;
+    document.getElementById("questionText").textContent = `Яка це ${questionType}? (${correctItem.word})`;
 
     // Озвучуємо слово емодзі при появі нового питання
     if ("speechSynthesis" in window) {
@@ -832,6 +858,7 @@ function checkAnswer(selectedItem, buttonElement) {
 
 function switchMode(mode) {
     currentMode = mode;
+    lastQuestions = []; // Скидаємо історію завдань
 
     // Оновлюємо кнопки режимів
     document
@@ -958,6 +985,7 @@ function updateAlphabetGrid() {
 
 function switchTab(tab) {
     currentTab = tab;
+    lastQuestions = []; // Скидаємо історію завдань
 
     // Оновлюємо кнопки табів
     document
