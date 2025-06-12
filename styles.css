@@ -589,14 +589,29 @@ body {
 
 .auth-btn.small {
     padding: 5px 10px;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+    margin: 0 5px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.auth-btn.small:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
 }
 
 .user-info {
-    text-align: center;
-    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin: 10px 0;
+}
+
+#userName {
+    font-size: 1.1rem;
     font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Покращений мобільний дизайн */
@@ -933,5 +948,74 @@ body {
     .btn {
         padding: 8px 12px;
         font-size: 0.85rem;
+    }
+}
+
+.reset-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background: rgba(255, 107, 107, 0.8);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+
+.reset-btn:hover {
+    background: rgba(255, 107, 107, 1);
+    transform: scale(1.05);
+}
+
+.target-score-setting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.progress-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 10px 0;
+}
+
+#progressText {
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.reset-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 15px;
+    background: rgba(255, 107, 107, 0.8);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.reset-btn:hover {
+    background: rgba(255, 107, 107, 1);
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .progress-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .reset-btn {
+        padding: 5px 10px;
+        font-size: 0.8rem;
     }
 } 

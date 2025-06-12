@@ -17,8 +17,14 @@ let currentUser = null;
 
 // Функції авторизації
 function signInAnonymously() {
+    if (!auth) {
+        console.error('Firebase не ініціалізовано');
+        return;
+    }
     auth.signInAnonymously()
         .then(() => {
+            // Очищаємо localStorage при вході
+            localStorage.removeItem('learningProgress');
             showCelebration("👤 Увійшли як гість!");
         })
         .catch((error) => {
@@ -28,9 +34,15 @@ function signInAnonymously() {
 }
 
 function signInWithGoogle() {
+    if (!auth) {
+        console.error('Firebase не ініціалізовано');
+        return;
+    }
     const provider = new firebase.auth.GoogleAuthProvider();
     auth.signInWithPopup(provider)
         .then(() => {
+            // Очищаємо localStorage при вході
+            localStorage.removeItem('learningProgress');
             showCelebration("📧 Успішний вхід через Google!");
         })
         .catch((error) => {
@@ -108,6 +120,7 @@ async function loadProgressFromCloud() {
 
         if (doc.exists) {
             const data = doc.data();
+            // Повністю замінюємо локальні дані даними з Firebase
             learnedLetters = data.learnedLetters || [];
             learnedNumbers = data.learnedNumbers || [];
             score = data.score || 0;
@@ -139,6 +152,53 @@ async function loadProgressFromCloud() {
         }
     } catch (error) {
         console.error("❌ Помилка завантаження:", error);
+    }
+}
+
+// Функція для збереження прогресу в localStorage
+function saveProgressToLocal() {
+    const progress = {
+        learnedLetters: learnedLetters,
+        learnedNumbers: learnedNumbers,
+        score: score,
+        targetScore: targetScore,
+        currentTab: currentTab
+    };
+    localStorage.setItem('learningProgress', JSON.stringify(progress));
+}
+
+// Функція для завантаження прогресу з localStorage
+function loadProgressFromLocal() {
+    const savedProgress = localStorage.getItem('learningProgress');
+    if (savedProgress) {
+        const progress = JSON.parse(savedProgress);
+        learnedLetters = progress.learnedLetters || [];
+        learnedNumbers = progress.learnedNumbers || [];
+        score = progress.score || 0;
+        targetScore = progress.targetScore || 0;
+        currentTab = progress.currentTab || "letters";
+
+        // Оновлюємо поле цільового рахунку
+        document.getElementById("targetScoreInput").value = targetScore;
+
+        // Оновлюємо відображення рахунку
+        const scoreDisplay = document.getElementById("scoreDisplay");
+        if (targetScore > 0) {
+            scoreDisplay.textContent = `Рахунок: ${score}/${targetScore}`;
+        } else {
+            scoreDisplay.textContent = `Рахунок: ${score}`;
+        }
+
+        // Оновлюємо активний таб
+        document
+            .getElementById("lettersTab")
+            .classList.toggle("active", currentTab === "letters");
+        document
+            .getElementById("numbersTab")
+            .classList.toggle("active", currentTab === "numbers");
+
+        updateDisplay();
+        updateProgress();
     }
 }
 
@@ -922,9 +982,11 @@ function switchTab(tab) {
 
     updateProgress();
     
-    // Зберігаємо поточний таб в Firebase
+    // Зберігаємо поточний таб
     if (currentUser) {
         saveProgressToCloud();
+    } else {
+        saveProgressToLocal();
     }
 }
 
@@ -1161,8 +1223,12 @@ function markAsLearned() {
         );
         updateProgress();
 
-        // Автоматично зберігаємо прогрес
-        saveProgressToCloud();
+        // Зберігаємо прогрес
+        if (currentUser) {
+            saveProgressToCloud();
+        } else {
+            saveProgressToLocal();
+        }
 
         setTimeout(() => {
             nextLetter();
@@ -1220,6 +1286,13 @@ document.addEventListener("DOMContentLoaded", () => {
     document
         .getElementById("currentLetter")
         .addEventListener("click", playSound);
+
+    // Завантажуємо прогрес
+    if (currentUser) {
+        loadProgressFromCloud();
+    } else {
+        loadProgressFromLocal();
+    }
 });
 
 // Ініціалізація
@@ -1295,3 +1368,36 @@ function handleSwipe() {
 
 speechSynthesis.addEventListener("voiceschanged", initializeVoices);
 initializeVoices(); // Викликаємо одразу на випадок, якщо голоси вже завантажені 
+
+function resetProgress() {
+    // Запитуємо підтвердження
+    if (!confirm("Ви впевнені, що хочете скинути весь прогрес? Цю дію неможливо скасувати.")) {
+        return;
+    }
+
+    // Скидаємо всі дані
+    learnedLetters = [];
+    learnedNumbers = [];
+    score = 0;
+    targetScore = 0;
+
+    // Оновлюємо відображення
+    document.getElementById("targetScoreInput").value = "0";
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    scoreDisplay.textContent = "Рахунок: 0";
+
+    // Оновлюємо інтерфейс
+    updateDisplay();
+    updateProgress();
+    updateAlphabetGrid();
+
+    // Зберігаємо зміни
+    if (currentUser) {
+        saveProgressToCloud();
+    } else {
+        saveProgressToLocal();
+    }
+
+    // Показуємо повідомлення
+    showCelebration("🔄 Прогрес скинуто!", "general");
+} 
