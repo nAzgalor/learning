@@ -117,6 +117,14 @@ async function loadProgressFromCloud() {
             // Оновлюємо поле цільового рахунку
             document.getElementById("targetScoreInput").value = targetScore;
 
+            // Оновлюємо відображення рахунку
+            const scoreDisplay = document.getElementById("scoreDisplay");
+            if (targetScore > 0) {
+                scoreDisplay.textContent = `Рахунок: ${score}/${targetScore}`;
+            } else {
+                scoreDisplay.textContent = `Рахунок: ${score}`;
+            }
+
             updateDisplay();
             updateProgress();
             showCelebration("📥 Прогрес завантажено!");
@@ -616,7 +624,7 @@ function generateAnswerOptions(correctItem) {
         const randomItem =
             originalArray[Math.floor(Math.random() * originalArray.length)];
 
-        // Перевіряємо, щоб варіант не повторювався
+        // Перевіряємо, чи варіант не повторювався
         const correctValue =
             currentTab === "letters" ? correctItem.letter : correctItem.number;
         const randomValue =
@@ -777,6 +785,12 @@ function switchMode(mode) {
     const scoreDisplay = document.getElementById("scoreDisplay");
     if (mode === "training") {
         scoreDisplay.style.display = "block";
+        // Оновлюємо відображення рахунку
+        if (targetScore > 0) {
+            scoreDisplay.textContent = `Рахунок: ${score}/${targetScore}`;
+        } else {
+            scoreDisplay.textContent = `Рахунок: ${score}`;
+        }
         generateQuestion();
     } else {
         scoreDisplay.style.display = "none";
