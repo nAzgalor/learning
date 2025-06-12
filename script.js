@@ -125,6 +125,14 @@ async function loadProgressFromCloud() {
                 scoreDisplay.textContent = `Рахунок: ${score}`;
             }
 
+            // Оновлюємо активний таб
+            document
+                .getElementById("lettersTab")
+                .classList.toggle("active", currentTab === "letters");
+            document
+                .getElementById("numbersTab")
+                .classList.toggle("active", currentTab === "numbers");
+
             updateDisplay();
             updateProgress();
             showCelebration("📥 Прогрес завантажено!");
@@ -913,6 +921,11 @@ function switchTab(tab) {
     }
 
     updateProgress();
+    
+    // Зберігаємо поточний таб в Firebase
+    if (currentUser) {
+        saveProgressToCloud();
+    }
 }
 
 function playSound() {
