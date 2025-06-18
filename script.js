@@ -1416,17 +1416,176 @@ function showCelebration(message = "🎉 Молодець! 🎉", type = "genera
 
 function practiceWriting() {
     const writingArea = document.getElementById("writingArea");
-    const current = getCurrentArray()[currentIndex];
-    const currentValue =
-        currentTab === "letters" ? current.letter : current.number;
-
-    writingArea.innerHTML = `
-        <div style="font-size: 4rem; color: #ddd; position: absolute; z-index: 1;">${currentValue}</div>
-        <div style="position: relative; z-index: 2; font-size: 1rem;">
-            Обведи ${currentTab === "letters" ? "букву" : "цифру"} пальцем або мишкою!<br>
-            <small>(функція в розробці)</small>
-        </div>
-    `;
+    
+    // Перевіряємо, чи canvas вже існує
+    if (writingArea.querySelector('canvas')) {
+        return;
+    }
+    
+    // Очищаємо область
+    writingArea.innerHTML = '';
+    
+    // Створюємо canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 300;
+    canvas.height = 150;
+    canvas.style.border = '2px solid #ddd';
+    canvas.style.borderRadius = '10px';
+    canvas.style.backgroundColor = 'white';
+    canvas.style.cursor = 'crosshair';
+    canvas.style.marginBottom = '10px';
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Налаштування контексту
+    ctx.strokeStyle = '#2d3436';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Змінні для малювання
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    
+    // Малюємо контур букви А
+    function drawLetterA() {
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const size = 50;
+        
+        ctx.beginPath();
+        // Ліва діагональна лінія
+        ctx.moveTo(centerX - size/2, centerY + size/2);
+        ctx.lineTo(centerX, centerY - size/2);
+        // Права діагональна лінія
+        ctx.lineTo(centerX + size/2, centerY + size/2);
+        // Горизонтальна лінія посередині
+        ctx.moveTo(centerX - size/3, centerY);
+        ctx.lineTo(centerX + size/3, centerY);
+        ctx.stroke();
+        
+        ctx.setLineDash([]);
+        ctx.strokeStyle = '#2d3436';
+        ctx.lineWidth = 3;
+    }
+    
+    // Функція для отримання координат
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        if (e.touches && e.touches[0]) {
+            return {
+                x: (e.touches[0].clientX - rect.left) * scaleX,
+                y: (e.touches[0].clientY - rect.top) * scaleY
+            };
+        } else {
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+    }
+    
+    // Початок малювання
+    function startDrawing(e) {
+        isDrawing = true;
+        const pos = getMousePos(e);
+        lastX = pos.x;
+        lastY = pos.y;
+        
+        // Починаємо новий шлях або продовжуємо існуючий
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+    }
+    
+    // Малювання
+    function draw(e) {
+        if (!isDrawing) return;
+        
+        const pos = getMousePos(e);
+        const currentX = pos.x;
+        const currentY = pos.y;
+        
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+        
+        lastX = currentX;
+        lastY = currentY;
+    }
+    
+    // Закінчення малювання (але не очищення)
+    function stopDrawing() {
+        if (!isDrawing) return;
+        isDrawing = false;
+        // Відновлюємо контекст малювання
+        ctx.strokeStyle = '#2d3436';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        // Не очищаємо canvas автоматично - дозволяємо продовжувати малювання
+    }
+    
+    // Очищення canvas
+    function clearCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawLetterA();
+    }
+    
+    // Завершення малювання
+    function finishDrawing() {
+        showCelebration("✅ Чудово! Ти намалював букву А!", "correct");
+        
+        // Очищаємо через 2 секунди
+        setTimeout(() => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawLetterA();
+        }, 200);
+    }
+    
+    // Додаємо обробники подій
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startDrawing(e);
+    });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        draw(e);
+    });
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        stopDrawing();
+    });
+    
+    // Створюємо кнопку очищення
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = '🧹 Очистити';
+    clearBtn.className = 'btn btn-secondary';
+    clearBtn.onclick = clearCanvas;
+    
+    // Створюємо кнопку завершення
+    const finishBtn = document.createElement('button');
+    finishBtn.textContent = '✅ Готово';
+    finishBtn.className = 'btn btn-primary';
+    finishBtn.onclick = finishDrawing;
+    
+    // Додаємо елементи
+    writingArea.appendChild(canvas);
+    writingArea.appendChild(clearBtn);
+    writingArea.appendChild(finishBtn);
+    
+    // Малюємо контур
+    drawLetterA();
 }
 
 // Додаємо можливість натискати на емодзі

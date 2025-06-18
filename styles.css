@@ -386,6 +386,46 @@ body {
     font-size: 1.2rem;
     cursor: pointer;
     text-align: center;
+    flex-direction: column;
+    padding: 10px;
+}
+
+.writing-area canvas {
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    background: white;
+    cursor: crosshair;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.writing-area canvas:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.writing-area .btn {
+    margin: 5px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+    color: #2d3436;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.writing-area .btn:hover {
+    background: white;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.writing-area .btn:active {
+    transform: scale(0.95);
 }
 
 .celebration {
@@ -771,6 +811,18 @@ body {
         text-align: center;
     }
 
+    .writing-area canvas {
+        width: 100%;
+        max-width: 300px;
+        height: 120px;
+    }
+
+    .writing-area .btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        margin: 3px;
+    }
+
     /* Повідомлення */
     .celebration {
         font-size: 2rem;
@@ -1018,4 +1070,20 @@ body {
         padding: 5px 10px;
         font-size: 0.8rem;
     }
+}
+
+.celebration.incorrect {
+    font-size: 1.2rem;
+}
+
+.writing-area canvas {
+    width: 100%;
+    max-width: 250px;
+    height: 100px;
+}
+
+.writing-area .btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    margin: 2px;
 } 
