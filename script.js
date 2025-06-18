@@ -1023,19 +1023,65 @@ function playSound() {
     const displayValue =
         currentTab === "letters" ? current.letter : current.number;
 
-    if ("speechSynthesis" in window) {
-        const utterance = new SpeechSynthesisUtterance(
-            `${displayValue}. ${current.word}.`,
-        );
-        utterance.lang = "uk-UA";
-        utterance.rate = 0.8;
-        utterance.pitch = 1.1;
+    // Використовуємо аудіофайли з папки sounds/ua/letters/
+    if (currentTab === "letters" && current.sound) {
+        const audio = new Audio(`sounds/ua/letters/${current.sound}.wav`);
+        audio.volume = 0.8;
+        
+        // Обробка помилок завантаження аудіо
+        audio.onerror = function() {
+            console.log(`Помилка завантаження аудіо для букви ${current.sound}`);
+            // Fallback до speechSynthesis якщо аудіофайл не знайдено
+            if ("speechSynthesis" in window) {
+                const utterance = new SpeechSynthesisUtterance(
+                    `${displayValue}. ${current.word}.`,
+                );
+                utterance.lang = "uk-UA";
+                utterance.rate = 0.8;
+                utterance.pitch = 1.1;
 
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+
+                speechSynthesis.speak(utterance);
+            }
+        };
+        
+        audio.play().catch(function(error) {
+            console.log(`Помилка відтворення аудіо: ${error}`);
+            // Fallback до speechSynthesis
+            if ("speechSynthesis" in window) {
+                const utterance = new SpeechSynthesisUtterance(
+                    `${displayValue}. ${current.word}.`,
+                );
+                utterance.lang = "uk-UA";
+                utterance.rate = 0.8;
+                utterance.pitch = 1.1;
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+
+                speechSynthesis.speak(utterance);
+            }
+        });
+    } else {
+        // Для цифр або якщо немає звуку, використовуємо speechSynthesis
+        if ("speechSynthesis" in window) {
+            const utterance = new SpeechSynthesisUtterance(
+                `${displayValue}. ${current.word}.`,
+            );
+            utterance.lang = "uk-UA";
+            utterance.rate = 0.8;
+            utterance.pitch = 1.1;
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
+            speechSynthesis.speak(utterance);
         }
-
-        speechSynthesis.speak(utterance);
     }
 
     // Додаємо візуальний ефект до букви/цифри
@@ -1170,17 +1216,59 @@ function setTargetScore() {
 function playEmojiSound() {
     const current = getCurrentArray()[currentIndex];
 
-    if ("speechSynthesis" in window) {
-        const utterance = new SpeechSynthesisUtterance(current.word);
-        utterance.lang = "uk-UA";
-        utterance.rate = 0.9;
-        utterance.pitch = 1.2;
+    // Використовуємо аудіофайли для букв
+    if (currentTab === "letters" && current.sound) {
+        const audio = new Audio(`sounds/ua/letters/${current.sound}.wav`);
+        audio.volume = 0.8;
+        
+        // Обробка помилок завантаження аудіо
+        audio.onerror = function() {
+            console.log(`Помилка завантаження аудіо для букви ${current.sound}`);
+            // Fallback до speechSynthesis
+            if ("speechSynthesis" in window) {
+                const utterance = new SpeechSynthesisUtterance(current.word);
+                utterance.lang = "uk-UA";
+                utterance.rate = 0.9;
+                utterance.pitch = 1.2;
 
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+
+                speechSynthesis.speak(utterance);
+            }
+        };
+        
+        audio.play().catch(function(error) {
+            console.log(`Помилка відтворення аудіо: ${error}`);
+            // Fallback до speechSynthesis
+            if ("speechSynthesis" in window) {
+                const utterance = new SpeechSynthesisUtterance(current.word);
+                utterance.lang = "uk-UA";
+                utterance.rate = 0.9;
+                utterance.pitch = 1.2;
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+
+                speechSynthesis.speak(utterance);
+            }
+        });
+    } else {
+        // Для цифр або якщо немає звуку, використовуємо speechSynthesis
+        if ("speechSynthesis" in window) {
+            const utterance = new SpeechSynthesisUtterance(current.word);
+            utterance.lang = "uk-UA";
+            utterance.rate = 0.9;
+            utterance.pitch = 1.2;
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
+            speechSynthesis.speak(utterance);
         }
-
-        speechSynthesis.speak(utterance);
     }
 
     // Візуальний ефект для емодзі
@@ -1195,18 +1283,61 @@ function playEmojiSound() {
 }
 
 function playQuestionEmojiSound() {
-    if (currentQuestion && "speechSynthesis" in window) {
-        const utterance = new SpeechSynthesisUtterance(currentQuestion.word);
-        utterance.lang = "uk-UA";
-        utterance.rate = 0.9;
-        utterance.pitch = 1.2;
+    if (currentQuestion) {
+        // Використовуємо аудіофайли для букв
+        if (currentTab === "letters" && currentQuestion.sound) {
+            const audio = new Audio(`sounds/ua/letters/${currentQuestion.sound}.wav`);
+            audio.volume = 0.8;
+            
+            // Обробка помилок завантаження аудіо
+            audio.onerror = function() {
+                console.log(`Помилка завантаження аудіо для букви ${currentQuestion.sound}`);
+                // Fallback до speechSynthesis
+                if ("speechSynthesis" in window) {
+                    const utterance = new SpeechSynthesisUtterance(currentQuestion.word);
+                    utterance.lang = "uk-UA";
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.2;
 
-        // Використовуємо обраний голос
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+
+                    speechSynthesis.speak(utterance);
+                }
+            };
+            
+            audio.play().catch(function(error) {
+                console.log(`Помилка відтворення аудіо: ${error}`);
+                // Fallback до speechSynthesis
+                if ("speechSynthesis" in window) {
+                    const utterance = new SpeechSynthesisUtterance(currentQuestion.word);
+                    utterance.lang = "uk-UA";
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.2;
+
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+
+                    speechSynthesis.speak(utterance);
+                }
+            });
+        } else {
+            // Для цифр або якщо немає звуку, використовуємо speechSynthesis
+            if ("speechSynthesis" in window) {
+                const utterance = new SpeechSynthesisUtterance(currentQuestion.word);
+                utterance.lang = "uk-UA";
+                utterance.rate = 0.9;
+                utterance.pitch = 1.2;
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+
+                speechSynthesis.speak(utterance);
+            }
         }
-
-        speechSynthesis.speak(utterance);
 
         // Візуальний ефект
         const emoji = document.getElementById("questionEmoji");
