@@ -1356,6 +1356,9 @@ function nextLetter() {
     currentIndex = (currentIndex + 1) % currentArray.length;
     updateDisplay();
     playSound();
+    // Очищаємо writingArea при перемиканні букви
+    const writingArea = document.getElementById('writingArea');
+    if (writingArea) writingArea.innerHTML = '✏️ Натисни, щоб попрактикувати написання';
 }
 
 function previousLetter() {
@@ -1364,6 +1367,9 @@ function previousLetter() {
         currentIndex === 0 ? currentArray.length - 1 : currentIndex - 1;
     updateDisplay();
     playSound();
+    // Очищаємо writingArea при перемиканні букви
+    const writingArea = document.getElementById('writingArea');
+    if (writingArea) writingArea.innerHTML = '✏️ Натисни, щоб попрактикувати написання';
 }
 
 function markAsLearned() {
@@ -1412,200 +1418,6 @@ function showCelebration(message = "🎉 Молодець! 🎉", type = "genera
             document.body.removeChild(celebration);
         }
     });
-}
-
-function practiceWriting() {
-    const writingArea = document.getElementById("writingArea");
-    
-    // Перевіряємо, чи canvas вже існує
-    if (writingArea.querySelector('canvas')) {
-        return;
-    }
-    
-    // Очищаємо область
-    writingArea.innerHTML = '';
-    
-    // Створюємо canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = 300;
-    canvas.height = 150;
-    canvas.style.border = '2px solid #ddd';
-    canvas.style.borderRadius = '10px';
-    canvas.style.backgroundColor = 'white';
-    canvas.style.cursor = 'crosshair';
-    canvas.style.marginBottom = '10px';
-    
-    const ctx = canvas.getContext('2d');
-    
-    // Еталонні точки для букви А (масштабовані під canvas 300x150)
-    // Верхівка, ліва діагональ, права діагональ, поперечна риска
-    const referencePoints = [
-        // Ліва діагональ
-        {x: 60, y: 130}, {x: 80, y: 100}, {x: 100, y: 70}, {x: 120, y: 40}, {x: 150, y: 20},
-        // Права діагональ
-        {x: 150, y: 20}, {x: 180, y: 40}, {x: 200, y: 70}, {x: 220, y: 100}, {x: 240, y: 130},
-        // Поперечна риска
-        {x: 110, y: 85}, {x: 150, y: 85}, {x: 190, y: 85}
-    ];
-    
-    // Масив для збереження точок малювання дитини
-    let userPoints = [];
-    
-    // Налаштування контексту
-    ctx.strokeStyle = '#2d3436';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-    
-    function drawLetterA() {
-        ctx.strokeStyle = '#ddd';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        
-        // Ліва діагональ
-        ctx.beginPath();
-        ctx.moveTo(60, 130);
-        ctx.lineTo(150, 20);
-        ctx.lineTo(240, 130);
-        ctx.stroke();
-        // Поперечна риска
-        ctx.beginPath();
-        ctx.moveTo(110, 85);
-        ctx.lineTo(190, 85);
-        ctx.stroke();
-        
-        ctx.setLineDash([]);
-        ctx.strokeStyle = '#2d3436';
-        ctx.lineWidth = 3;
-    }
-    
-    function getMousePos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        if (e.touches && e.touches[0]) {
-            return {
-                x: (e.touches[0].clientX - rect.left) * scaleX,
-                y: (e.touches[0].clientY - rect.top) * scaleY
-            };
-        } else {
-            return {
-                x: (e.clientX - rect.left) * scaleX,
-                y: (e.clientY - rect.top) * scaleY
-            };
-        }
-    }
-    
-    function startDrawing(e) {
-        isDrawing = true;
-        const pos = getMousePos(e);
-        lastX = pos.x;
-        lastY = pos.y;
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-        // Додаємо першу точку малювання
-        userPoints.push({x: lastX, y: lastY});
-    }
-    
-    function draw(e) {
-        if (!isDrawing) return;
-        const pos = getMousePos(e);
-        const currentX = pos.x;
-        const currentY = pos.y;
-        ctx.lineTo(currentX, currentY);
-        ctx.stroke();
-        lastX = currentX;
-        lastY = currentY;
-        // Додаємо кожну точку малювання
-        userPoints.push({x: currentX, y: currentY});
-    }
-    
-    function stopDrawing() {
-        if (!isDrawing) return;
-        isDrawing = false;
-        ctx.strokeStyle = '#2d3436';
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-    }
-    
-    function clearCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawLetterA();
-        userPoints = [];
-    }
-    
-    function finishDrawing() {
-        // Параметри перевірки
-        const DIST_THRESHOLD = 15; // пікселів
-        const MIN_PERCENT = 0.7; // 70%
-
-        let closePoints = 0;
-        for (let i = 0; i < userPoints.length; i++) {
-            const up = userPoints[i];
-            // Знаходимо мінімальну відстань до referencePoints
-            let minDist = Infinity;
-            for (let j = 0; j < referencePoints.length; j++) {
-                const rp = referencePoints[j];
-                const dist = Math.sqrt((up.x - rp.x) ** 2 + (up.y - rp.y) ** 2);
-                if (dist < minDist) minDist = dist;
-            }
-            if (minDist < DIST_THRESHOLD) closePoints++;
-        }
-        const percent = userPoints.length > 0 ? closePoints / userPoints.length : 0;
-
-        if (percent >= MIN_PERCENT) {
-            showCelebration("✅ Молодець! Ти обвів букву А!", "correct");
-        } else {
-            showCelebration("🔄 Спробуй ще раз, малюй ближче до контуру!", "incorrect");
-        }
-        setTimeout(() => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawLetterA();
-            userPoints = [];
-        }, 200);
-    }
-    
-    // Додаємо обробники подій
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        startDrawing(e);
-    });
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        draw(e);
-    });
-    canvas.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        stopDrawing();
-    });
-    
-    // Глобальні обробники для скидання isDrawing, якщо відпускання поза canvas
-    document.addEventListener('mouseup', stopDrawing);
-    document.addEventListener('touchend', stopDrawing);
-    
-    const clearBtn = document.createElement('button');
-    clearBtn.textContent = '🧹 Очистити';
-    clearBtn.className = 'btn btn-secondary';
-    clearBtn.onclick = clearCanvas;
-    
-    const finishBtn = document.createElement('button');
-    finishBtn.textContent = '✅ Готово';
-    finishBtn.className = 'btn btn-primary';
-    finishBtn.onclick = finishDrawing;
-    
-    writingArea.appendChild(canvas);
-    writingArea.appendChild(clearBtn);
-    writingArea.appendChild(finishBtn);
-    drawLetterA();
 }
 
 // Додаємо можливість натискати на емодзі
