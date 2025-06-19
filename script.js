@@ -970,6 +970,10 @@ function updateAlphabetGrid() {
                 currentIndex = shuffledIndex;
                 updateDisplay();
                 playSound();
+                // Додаю: одразу відкриваємо canvas для цієї букви
+                if (currentTab === "letters") {
+                    practiceWriting(item.letter);
+                }
             }
         };
 
@@ -1475,9 +1479,22 @@ document.addEventListener("keydown", (e) => {
         switch (e.key) {
             case "ArrowLeft":
                 previousLetter();
+                // Якщо вже був canvas — одразу відкриваємо новий для поточної букви
+                setTimeout(() => {
+                    const writingArea = document.getElementById('writingArea');
+                    if (writingArea && writingArea.querySelector('canvas')) {
+                        practiceWriting(getCurrentArray()[currentIndex].letter);
+                    }
+                }, 0);
                 break;
             case "ArrowRight":
                 nextLetter();
+                setTimeout(() => {
+                    const writingArea = document.getElementById('writingArea');
+                    if (writingArea && writingArea.querySelector('canvas')) {
+                        practiceWriting(getCurrentArray()[currentIndex].letter);
+                    }
+                }, 0);
                 break;
             case " ":
                 e.preventDefault();

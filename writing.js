@@ -55,8 +55,9 @@ const referenceLetters = {
     },
     'В': {
         points: [
-            {x: 130, y: 30}, {x: 130, y: 130}, {x: 150, y: 80}, {x: 170, y: 130}, {x: 170, y: 30},
-            {x: 150, y: 80}, {x: 130, y: 80}, {x: 170, y: 80}
+            {x: 135, y: 30}, {x: 135, y: 130},
+            {x: 135, y: 30}, {x: 170, y: 45}, {x: 135, y: 80},
+            {x: 135, y: 80}, {x: 170, y: 95}, {x: 135, y: 130}
         ],
         draw: function(ctx) {
             ctx.strokeStyle = '#ddd';
@@ -64,16 +65,18 @@ const referenceLetters = {
             ctx.setLineDash([5, 5]);
             // Вертикальна лінія
             ctx.beginPath();
-            ctx.moveTo(130, 30);
-            ctx.lineTo(130, 130);
+            ctx.moveTo(135, 30);
+            ctx.lineTo(135, 130);
             ctx.stroke();
             // Верхня дуга
             ctx.beginPath();
-            ctx.arc(150, 55, 20, Math.PI, 0, false);
+            ctx.moveTo(135, 30);
+            ctx.bezierCurveTo(175, 30, 175, 80, 135, 80);
             ctx.stroke();
             // Нижня дуга
             ctx.beginPath();
-            ctx.arc(150, 105, 20, Math.PI, 0, false);
+            ctx.moveTo(135, 80);
+            ctx.bezierCurveTo(175, 80, 175, 130, 135, 130);
             ctx.stroke();
             ctx.setLineDash([]);
             ctx.strokeStyle = '#2d3436';
@@ -334,7 +337,6 @@ const referenceLetters = {
 
 function practiceWriting(letter = 'А') {
     const writingArea = document.getElementById("writingArea");
-    if (writingArea.querySelector('canvas')) return;
     writingArea.innerHTML = '';
     const canvas = document.createElement('canvas');
     canvas.width = 300;
