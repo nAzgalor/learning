@@ -74,6 +74,9 @@ auth.onAuthStateChanged((user) => {
 
     if (user) {
         loadProgressFromCloud();
+    } else {
+        // Якщо користувач не увійшов, завантажуємо з локального сховища
+        loadProgressFromLocal();
     }
 });
 
@@ -130,26 +133,8 @@ async function loadProgressFromCloud() {
             score = data.score || 0;
             targetScore = data.targetScore || 0;
             currentTab = data.currentTab || "letters";
-
-            // Оновлюємо поле цільового рахунку
-            document.getElementById("targetScoreInput").value = targetScore;
-
-            // Оновлюємо відображення рахунку
-            const scoreDisplay = document.getElementById("scoreDisplay");
-            if (targetScore > 0) {
-                scoreDisplay.textContent = `Рахунок: ${score}/${targetScore}`;
-            } else {
-                scoreDisplay.textContent = `Рахунок: ${score}`;
-            }
-
-            // Оновлюємо активний таб
-            document
-                .getElementById("lettersTab")
-                .classList.toggle("active", currentTab === "letters");
-            document
-                .getElementById("numbersTab")
-                .classList.toggle("active", currentTab === "numbers");
-
+            
+            updateUIBasedOnTab(currentTab);
             updateDisplay();
             updateProgress();
             showCelebration("📥 Прогрес завантажено!");
@@ -182,29 +167,12 @@ function loadProgressFromLocal() {
         targetScore = progress.targetScore || 0;
         currentTab = progress.currentTab || "letters";
 
-        // Оновлюємо поле цільового рахунку
-        document.getElementById("targetScoreInput").value = targetScore;
-
-        // Оновлюємо відображення рахунку
-        const scoreDisplay = document.getElementById("scoreDisplay");
-        if (targetScore > 0) {
-            scoreDisplay.textContent = `Рахунок: ${score}/${targetScore}`;
-        } else {
-            scoreDisplay.textContent = `Рахунок: ${score}`;
-        }
-
-        // Оновлюємо активний таб
-        document
-            .getElementById("lettersTab")
-            .classList.toggle("active", currentTab === "letters");
-        document
-            .getElementById("numbersTab")
-            .classList.toggle("active", currentTab === "numbers");
-
+        updateUIBasedOnTab(currentTab);
         updateDisplay();
         updateProgress();
     }
 }
+
 
 const ukrainianAlphabet = [
     {
@@ -569,10 +537,7 @@ let shuffledNumbers = [];
 let learnedNumbers = [];
 
 function shuffleAlphabet() {
-    // Створюємо копію оригінального алфавіту
     shuffledAlphabet = [...ukrainianAlphabet];
-
-    // Перемішуємо за алгоритмом Fisher-Yates
     for (let i = shuffledAlphabet.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffledAlphabet[i], shuffledAlphabet[j]] = [
@@ -583,10 +548,7 @@ function shuffleAlphabet() {
 }
 
 function shuffleNumbers() {
-    // Створюємо копію оригінального масиву цифр
     shuffledNumbers = [...ukrainianNumbers];
-
-    // Перемішуємо за алгоритмом Fisher-Yates
     for (let i = shuffledNumbers.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffledNumbers[i], shuffledNumbers[j]] = [
@@ -606,19 +568,15 @@ function getCurrentLearnedArray() {
 
 function initializeVoices() {
     const voices = speechSynthesis.getVoices();
-
-    // Шукаємо українські голоси
     const ukrainianVoices = voices.filter(
         (voice) =>
             voice.lang.includes("uk") ||
             voice.name.toLowerCase().includes("ukrain"),
     );
 
-    // Якщо є українські голоси, вибираємо перший
     if (ukrainianVoices.length > 0) {
         selectedVoice = ukrainianVoices[0];
     } else {
-        // Якщо немає українських, шукаємо жіночі голоси
         const femaleVoices = voices.filter(
             (voice) =>
                 voice.name.toLowerCase().includes("female") ||
@@ -630,68 +588,55 @@ function initializeVoices() {
         if (femaleVoices.length > 0) {
             selectedVoice = femaleVoices[0];
         } else {
-            // Використовуємо перший доступний голос
             selectedVoice = voices[0];
         }
     }
-
     console.log("Обраний голос:", selectedVoice?.name);
 }
 
-function generateQuestion() {
-    // Розблоковуємо кнопки для нового питання
-    buttonsLocked = false;
+// Додаю універсальну функцію для програвання звуку для букви/цифри
+function playItemSound(item) {
+    if (currentTab === "letters" && item.sound) {
+        const audio = new Audio(`sounds/ua/letters/${item.sound}.wav`);
+        audio.play().catch(() => speakFallback(item.letter, item.word));
+    } else {
+        // Для цифр або якщо немає запису — синтез
+        speakFallback(currentTab === "letters" ? item.letter : item.number, item.word);
+    }
+}
 
-    // Вибираємо випадковий елемент з поточного масиву
+function generateQuestion() {
+    buttonsLocked = false;
     const originalArray = getOriginalArray();
     
-    // Фільтруємо завдання, які не були показані в останніх MIN_QUESTIONS_BEFORE_REPEAT разів
     let availableQuestions = originalArray.filter(item => {
         const itemValue = currentTab === "letters" ? item.letter : item.number;
         return !lastQuestions.includes(itemValue);
     });
 
-    // Якщо всі завдання вже були показані, скидаємо історію
     if (availableQuestions.length === 0) {
         lastQuestions = [];
         availableQuestions = originalArray;
     }
 
-    // Вибираємо випадкове завдання з доступних
     const randomIndex = Math.floor(Math.random() * availableQuestions.length);
     const correctItem = availableQuestions[randomIndex];
-
-    // Додаємо завдання в історію
     const itemValue = currentTab === "letters" ? correctItem.letter : correctItem.number;
     lastQuestions.push(itemValue);
     
-    // Обмежуємо розмір історії
     if (lastQuestions.length > MIN_QUESTIONS_BEFORE_REPEAT) {
         lastQuestions.shift();
     }
 
     currentQuestion = correctItem;
 
-    // Оновлюємо відображення питання
     document.getElementById("questionEmoji").textContent = correctItem.emoji;
     const questionType = currentTab === "letters" ? "букву" : "цифру";
     document.getElementById("questionText").textContent = `Яка це ${questionType}? (${correctItem.word})`;
 
-    // Озвучуємо слово емодзі при появі нового питання
-    if ("speechSynthesis" in window) {
-        const utterance = new SpeechSynthesisUtterance(correctItem.word);
-        utterance.lang = "uk-UA";
-        utterance.rate = 0.9;
-        utterance.pitch = 1.2;
+    // Використовую універсальну функцію для програвання звуку
+    playItemSound(correctItem);
 
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-        }
-
-        speechSynthesis.speak(utterance);
-    }
-
-    // Додаємо візуальний ефект до емодзі при озвучуванні
     const emoji = document.getElementById("questionEmoji");
     emoji.style.transform = "scale(1.2)";
     emoji.style.filter = "brightness(1.3)";
@@ -701,7 +646,6 @@ function generateQuestion() {
         emoji.style.filter = "brightness(1)";
     }, 800);
 
-    // Генеруємо варіанти відповідей
     generateAnswerOptions(correctItem);
 }
 
@@ -713,19 +657,11 @@ function generateAnswerOptions(correctItem) {
     const options = [correctItem];
     const originalArray = getOriginalArray();
 
-    // Додаємо 4 неправильні варіанти
     while (options.length < 5) {
-        const randomItem =
-            originalArray[Math.floor(Math.random() * originalArray.length)];
-
-        // Перевіряємо, чи варіант не повторювався
-        const correctValue =
-            currentTab === "letters" ? correctItem.letter : correctItem.number;
-        const randomValue =
-            currentTab === "letters" ? randomItem.letter : randomItem.number;
+        const randomItem = originalArray[Math.floor(Math.random() * originalArray.length)];
         const isDuplicate = options.some((option) => {
-            const optionValue =
-                currentTab === "letters" ? option.letter : option.number;
+            const optionValue = currentTab === "letters" ? option.letter : option.number;
+            const randomValue = currentTab === "letters" ? randomItem.letter : randomItem.number;
             return optionValue === randomValue;
         });
 
@@ -734,667 +670,271 @@ function generateAnswerOptions(correctItem) {
         }
     }
 
-    // Перемішуємо варіанти для випадкового розташування
     options.sort(() => Math.random() - 0.5);
 
-    // Очищуємо контейнер та створюємо нові кнопки
     const container = document.getElementById("answerOptions");
     container.innerHTML = "";
 
     options.forEach((option) => {
         const btn = document.createElement("button");
         btn.className = "answer-btn";
-        btn.textContent =
-            currentTab === "letters" ? option.letter : option.number;
+        btn.textContent = currentTab === "letters" ? option.letter : option.number;
         btn.onclick = () => checkAnswer(option, btn);
-
-        // Додаємо hover ефект
-        btn.addEventListener("mouseenter", () => {
-            if (!buttonsLocked) {
-                btn.style.transform = "scale(1.1)";
-            }
-        });
-
-        btn.addEventListener("mouseleave", () => {
-            if (!buttonsLocked) {
-                btn.style.transform = "scale(1)";
-            }
-        });
-
         container.appendChild(btn);
     });
 }
 
 function checkAnswer(selectedItem, buttonElement) {
-    // Перевіряємо, чи не заблоковані кнопки
-    if (buttonsLocked) {
-        return;
-    }
+    if (buttonsLocked) return;
 
-    const currentValue =
-        currentTab === "letters" ? selectedItem.letter : selectedItem.number;
-    const correctValue =
-        currentTab === "letters" ? currentQuestion.letter : currentQuestion.number;
+    const currentValue = currentTab === "letters" ? selectedItem.letter : selectedItem.number;
+    const correctValue = currentTab === "letters" ? currentQuestion.letter : currentQuestion.number;
     const isCorrect = currentValue === correctValue;
 
     if (isCorrect) {
-        // Блокуємо всі кнопки після правильної відповіді
         buttonsLocked = true;
-        const allButtons = document.querySelectorAll(".answer-btn");
-        allButtons.forEach((btn) => {
+        document.querySelectorAll(".answer-btn").forEach((btn) => {
             btn.disabled = true;
             btn.style.opacity = "0.6";
             btn.style.cursor = "not-allowed";
         });
 
-        // Зелений колір та анімація для правильної відповіді
         buttonElement.style.backgroundColor = "#00b894";
         buttonElement.style.color = "white";
         buttonElement.classList.add("correct");
 
-        // Озвучуємо правильну відповідь
-        if ("speechSynthesis" in window) {
-            const utterance = new SpeechSynthesisUtterance(
-                `${currentValue}. ${selectedItem.word}. Вірно!`,
-            );
-            utterance.lang = "uk-UA";
-            utterance.rate = 0.8;
-            utterance.pitch = 1.1;
-
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            }
-
-            speechSynthesis.speak(utterance);
-        }
-
         score += 10;
         showCelebration("🎉 Вірно! 🎉", "correct");
-        saveProgressToCloud();
+        saveProgress();
 
         setTimeout(() => {
             generateQuestion();
         }, 1500);
     } else {
-        // При неправильній відповіді НЕ блокуємо кнопки
-        // Червоний колір та анімація для неправильної відповіді
         buttonElement.style.backgroundColor = "#e17055";
         buttonElement.style.color = "white";
         buttonElement.classList.add("incorrect");
 
-        // Озвучуємо неправильно обрану букву/цифру
-        if ("speechSynthesis" in window) {
-            const utterance = new SpeechSynthesisUtterance(
-                `${currentValue}. ${selectedItem.word}. Спробуй ще раз!`,
-            );
-            utterance.lang = "uk-UA";
-            utterance.rate = 0.8;
-            utterance.pitch = 1.1;
-
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            }
-
-            speechSynthesis.speak(utterance);
-        }
-
         score = Math.max(0, score - 10);
-        showCelebration(
-            `❌ Це ${currentValue} (${selectedItem.word}). Спробуй ще раз!`,
-            "incorrect",
-        );
-        saveProgressToCloud();
+        showCelebration(`❌ Це ${currentValue} (${selectedItem.word}). Спробуй ще раз!`, "incorrect");
+        saveProgress();
 
-        // Через 2 секунди повертаємо кнопку до нормального стану
         setTimeout(() => {
             buttonElement.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
             buttonElement.style.color = "#2d3436";
             buttonElement.classList.remove("incorrect");
         }, 2000);
     }
-
     updateProgress();
 }
 
 function switchMode(mode) {
     currentMode = mode;
-    lastQuestions = []; // Скидаємо історію завдань
+    lastQuestions = [];
 
-    // Оновлюємо кнопки режимів
-    document
-        .getElementById("learningBtn")
-        .classList.toggle("active", mode === "learning");
-    document
-        .getElementById("trainingBtn")
-        .classList.toggle("active", mode === "training");
+    document.getElementById("learningBtn").classList.toggle("active", mode === "learning");
+    document.getElementById("trainingBtn").classList.toggle("active", mode === "training");
+    document.getElementById("learningMode").classList.toggle("active", mode === "learning");
+    document.getElementById("trainingMode").classList.toggle("active", mode === "training");
 
-    // Показуємо/ховаємо режими
-    document
-        .getElementById("learningMode")
-        .classList.toggle("active", mode === "learning");
-    document
-        .getElementById("trainingMode")
-        .classList.toggle("active", mode === "training");
-
-    // Показуємо/ховаємо рахунок залежно від режиму
     const scoreDisplay = document.getElementById("scoreDisplay");
+    const targetScoreSetting = document.querySelector('.target-score-setting');
+    
     if (mode === "training") {
         scoreDisplay.style.display = "block";
-        // Оновлюємо відображення рахунку
-        if (targetScore > 0) {
-            scoreDisplay.textContent = `Рахунок: ${score}/${targetScore}`;
-        } else {
-            scoreDisplay.textContent = `Рахунок: ${score}`;
-        }
+        targetScoreSetting.style.display = 'flex';
+        updateProgress();
         generateQuestion();
     } else {
         scoreDisplay.style.display = "none";
+        targetScoreSetting.style.display = 'none';
         updateDisplay();
     }
 }
 
 function updateDisplay() {
     const current = getCurrentArray()[currentIndex];
-    const displayValue =
-        currentTab === "letters" ? current.letter : current.number;
+    if (!current) return;
+    
+    const displayValue = currentTab === "letters" ? current.letter : current.number;
 
     document.getElementById("currentLetter").textContent = displayValue;
     document.getElementById("emojiDisplay").textContent = current.emoji;
-    document.getElementById("letterName").textContent =
-        `${displayValue} - "${current.name}"`;
+    document.getElementById("letterName").textContent = `${displayValue} - "${current.name}"`;
     document.getElementById("letterExample").textContent = current.example;
-    document.getElementById("letterSound").textContent =
-        `Натисни на ${currentTab === "letters" ? "букву" : "цифру"} або емодзі!`;
-
+    document.getElementById("letterSound").textContent = `Натисни на ${currentTab === "letters" ? "букву" : "цифру"} або емодзі!`;
+    
     updateProgress();
     updateAlphabetGrid();
+    setupWritingArea();
 }
 
 function updateProgress() {
     const learned = getCurrentLearnedArray().length;
     const total = getCurrentArray().length;
-    const percentage = (learned / total) * 100;
+    const percentage = total > 0 ? (learned / total) * 100 : 0;
 
     document.getElementById("progressFill").style.width = percentage + "%";
-    document.getElementById("progressText").textContent =
-        `Прогрес: ${learned}/${total}`;
+    document.getElementById("progressText").textContent = `Прогрес: ${learned}/${total}`;
 
-    // Показуємо рахунок тільки в режимі тренування
+    const scoreDisplay = document.getElementById("scoreDisplay");
     if (currentMode === "training") {
+        scoreDisplay.style.display = 'block';
         if (targetScore > 0) {
-            document.getElementById("scoreDisplay").textContent =
-                `Рахунок: ${score}/${targetScore}`;
-
-            // Перевіряємо, чи досягнута ціль
+            scoreDisplay.textContent = `Рахунок: ${score}/${targetScore}`;
             if (score >= targetScore) {
-                setTimeout(() => {
-                    showVictoryScreen();
-                }, 500);
+                setTimeout(showVictoryScreen, 500);
             }
         } else {
-            document.getElementById("scoreDisplay").textContent =
-                `Рахунок: ${score}`;
+            scoreDisplay.textContent = `Рахунок: ${score}`;
         }
     } else {
-        // В режимі навчання не показуємо рахунок
-        document.getElementById("scoreDisplay").style.display = "none";
+        scoreDisplay.style.display = 'none';
     }
 }
 
 function updateAlphabetGrid() {
     const grid = document.getElementById("alphabetGrid");
     grid.innerHTML = "";
-
-    // Використовуємо поточний масив залежно від табу
     const originalArray = getOriginalArray();
     const learnedArray = getCurrentLearnedArray();
     const currentArray = getCurrentArray();
 
-    originalArray.forEach((item, index) => {
+    originalArray.forEach((item) => {
         const btn = document.createElement("button");
         btn.className = "alphabet-btn";
-        btn.textContent =
-            currentTab === "letters" ? item.letter : item.number;
+        const itemValue = currentTab === "letters" ? item.letter : item.number;
+        btn.textContent = itemValue;
+
         btn.onclick = () => {
-            // Знаходимо індекс цього елемента в перемішаному масиві
-            const displayValue =
-                currentTab === "letters" ? item.letter : item.number;
-            const shuffledIndex = currentArray.findIndex((shuffledItem) => {
-                const shuffledValue =
-                    currentTab === "letters"
-                        ? shuffledItem.letter
-                        : shuffledItem.number;
-                return shuffledValue === displayValue;
+            const shuffledIndex = currentArray.findIndex(shuffledItem => {
+                const shuffledValue = currentTab === "letters" ? shuffledItem.letter : shuffledItem.number;
+                return shuffledValue === itemValue;
             });
             if (shuffledIndex !== -1) {
                 currentIndex = shuffledIndex;
                 updateDisplay();
                 playSound();
+                if (currentTab === "letters") {
+                    practiceWriting(item.letter);
+                }
             }
         };
 
-        const itemValue =
-            currentTab === "letters" ? item.letter : item.number;
         if (learnedArray.includes(itemValue)) {
             btn.classList.add("learned");
         }
-
         grid.appendChild(btn);
     });
 }
 
 function switchTab(tab) {
     currentTab = tab;
-    lastQuestions = []; // Скидаємо історію завдань
-
-    // Оновлюємо кнопки табів
-    document
-        .getElementById("lettersTab")
-        .classList.toggle("active", tab === "letters");
-    document
-        .getElementById("numbersTab")
-        .classList.toggle("active", tab === "numbers");
-
-    // Скидаємо індекс на початок поточного масиву
+    lastQuestions = [];
     currentIndex = 0;
 
-    // НЕ перемішуємо масиви - вони вже перемішані при завантаженні
-    // Просто оновлюємо відображення залежно від поточного режиму
+    updateUIBasedOnTab(tab);
+    
     if (currentMode === "training") {
-        // У режимі тренування генеруємо нове питання
         generateQuestion();
     } else {
-        // У режимі навчання оновлюємо звичайне відображення
         updateDisplay();
     }
-
-    updateProgress();
     
-    // Зберігаємо поточний таб
-    if (currentUser) {
-        saveProgressToCloud();
+    updateProgress();
+    saveProgress();
+}
+
+function updateUIBasedOnTab(tab) {
+    document.getElementById("lettersTab").classList.toggle("active", tab === "letters");
+    document.getElementById("numbersTab").classList.toggle("active", tab === "numbers");
+
+    const writingArea = document.getElementById("writingArea");
+    if (tab === 'letters' && currentMode === 'learning') {
+        writingArea.style.display = 'flex';
+        setupWritingArea();
     } else {
-        saveProgressToLocal();
+        writingArea.style.display = 'none';
+    }
+
+    document.getElementById("targetScoreInput").value = targetScore;
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    if (targetScore > 0) {
+        scoreDisplay.textContent = `Рахунок: ${score}/${targetScore}`;
+    } else {
+        scoreDisplay.textContent = `Рахунок: ${score}`;
     }
 }
+
 
 function playSound() {
     const current = getCurrentArray()[currentIndex];
-    const displayValue =
-        currentTab === "letters" ? current.letter : current.number;
+    const displayValue = currentTab === "letters" ? current.letter : current.number;
 
-    // Використовуємо аудіофайли з папки sounds/ua/letters/
     if (currentTab === "letters" && current.sound) {
         const audio = new Audio(`sounds/ua/letters/${current.sound}.wav`);
-        audio.volume = 0.8;
-        
-        // Обробка помилок завантаження аудіо
-        audio.onerror = function() {
-            console.log(`Помилка завантаження аудіо для букви ${current.sound}`);
-            // Fallback до speechSynthesis якщо аудіофайл не знайдено
-            if ("speechSynthesis" in window) {
-                const utterance = new SpeechSynthesisUtterance(
-                    `${displayValue}. ${current.word}.`,
-                );
-                utterance.lang = "uk-UA";
-                utterance.rate = 0.8;
-                utterance.pitch = 1.1;
-
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
-
-                speechSynthesis.speak(utterance);
-            }
-        };
-        
-        audio.play().catch(function(error) {
-            console.log(`Помилка відтворення аудіо: ${error}`);
-            // Fallback до speechSynthesis
-            if ("speechSynthesis" in window) {
-                const utterance = new SpeechSynthesisUtterance(
-                    `${displayValue}. ${current.word}.`,
-                );
-                utterance.lang = "uk-UA";
-                utterance.rate = 0.8;
-                utterance.pitch = 1.1;
-
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
-
-                speechSynthesis.speak(utterance);
-            }
-        });
+        audio.play().catch(() => speakFallback(displayValue, current.word));
     } else {
-        // Для цифр або якщо немає звуку, використовуємо speechSynthesis
-        if ("speechSynthesis" in window) {
-            const utterance = new SpeechSynthesisUtterance(
-                `${displayValue}. ${current.word}.`,
-            );
-            utterance.lang = "uk-UA";
-            utterance.rate = 0.8;
-            utterance.pitch = 1.1;
-
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            }
-
-            speechSynthesis.speak(utterance);
-        }
+        speakFallback(displayValue, current.word);
     }
 
-    // Додаємо візуальний ефект до букви/цифри
     const letter = document.getElementById("currentLetter");
     letter.style.transform = "scale(1.2)";
-    letter.style.color = "#00b894";
-
-    // Додаємо ефект до емодзі
-    const emoji = document.getElementById("emojiDisplay");
-    emoji.style.transform = "scale(1.3)";
-
-    setTimeout(() => {
-        letter.style.transform = "scale(1)";
-        letter.style.color = "#2d3436";
-        emoji.style.transform = "scale(1)";
-    }, 500);
+    setTimeout(() => { letter.style.transform = "scale(1)"; }, 500);
 }
 
-function createCelebrationMusic() {
-    try {
-        // Створюємо веселу мелодію за допомогою Web Audio API
-        const audioContext = new (window.AudioContext ||
-            window.webkitAudioContext)();
-
-        // Ноти для веселої мелодії (До мажор)
-        const notes = [
-            { freq: 523.25, duration: 0.3 }, // До
-            { freq: 587.33, duration: 0.3 }, // Ре
-            { freq: 659.25, duration: 0.3 }, // Мі
-            { freq: 698.46, duration: 0.3 }, // Фа
-            { freq: 783.99, duration: 0.6 }, // Соль
-            { freq: 698.46, duration: 0.3 }, // Фа
-            { freq: 659.25, duration: 0.3 }, // Мі
-            { freq: 587.33, duration: 0.3 }, // Ре
-            { freq: 523.25, duration: 0.6 }, // До
-        ];
-
-        let currentTime = audioContext.currentTime;
-
-        notes.forEach((note) => {
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.frequency.setValueAtTime(note.freq, currentTime);
-            oscillator.type = "triangle";
-
-            gainNode.gain.setValueAtTime(0, currentTime);
-            gainNode.gain.linearRampToValueAtTime(0.3, currentTime + 0.01);
-            gainNode.gain.exponentialRampToValueAtTime(
-                0.01,
-                currentTime + note.duration,
-            );
-
-            oscillator.start(currentTime);
-            oscillator.stop(currentTime + note.duration);
-
-            currentTime += note.duration;
-        });
-    } catch (error) {
-        console.log("Музика недоступна в цьому браузері");
-    }
-}
-
-function showVictoryScreen() {
-    const victoryScreen = document.createElement("div");
-    victoryScreen.className = "victory-celebration";
-    victoryScreen.innerHTML = `
-        <div class="victory-content">
-            <div class="victory-emoji">🎉🏆🎊</div>
-            <div class="victory-text">Вітаємо! Ціль досягнута!</div>
-            <div class="victory-score">Ви набрали ${score} поїнтів!</div>
-            <button class="continue-btn" onclick="closeVictoryScreen()">
-                Продовжити навчання
-            </button>
-        </div>
-    `;
-
-    document.body.appendChild(victoryScreen);
-
-    // Запускаємо святкову музику
-    createCelebrationMusic();
-
-    // Повторюємо музику кілька разів
-    setTimeout(() => createCelebrationMusic(), 1000);
-    setTimeout(() => createCelebrationMusic(), 2000);
-}
-
-function closeVictoryScreen() {
-    const victoryScreen = document.querySelector(".victory-celebration");
-
-    targetScore = 0;
-
-    if (victoryScreen) {
-        document.body.removeChild(victoryScreen);
+function speakFallback(text, word) {
+    if ("speechSynthesis" in window) {
+        const utterance = new SpeechSynthesisUtterance(`${text}. ${word}.`);
+        utterance.lang = "uk-UA";
+        if (selectedVoice) utterance.voice = selectedVoice;
+        speechSynthesis.speak(utterance);
     }
 }
 
 function setTargetScore() {
-    // Складна математична перевірка для батьків
-    const mathQuestion = Math.floor(Math.random() * 10) + 5; // Число від 5 до 14
-    const mathAnswer = mathQuestion * 3; // Складна формула
-
-    const userAnswer = prompt(
-        `Батьківський контроль:\nОбчисліть: ${mathQuestion} × 3 = ?`,
-    );
+    const mathQuestion = Math.floor(Math.random() * 10) + 5;
+    const mathAnswer = mathQuestion * 3;
+    const userAnswer = prompt(`Батьківський контроль:\nОбчисліть: ${mathQuestion} × 3 = ?`);
 
     if (parseInt(userAnswer) === mathAnswer) {
-        const newTarget = parseInt(
-            document.getElementById("targetScoreInput").value,
-        );
-        targetScore = newTarget;
-
-        if (targetScore === 0) {
-            showCelebration("⚙️ Встановлено: без лімітів поїнтів");
-        } else {
-            showCelebration(`⚙️ Встановлено ціль: ${targetScore} поїнтів`);
-        }
-
+        targetScore = parseInt(document.getElementById("targetScoreInput").value, 10);
+        showCelebration(targetScore === 0 ? "⚙️ Встановлено: без лімітів" : `⚙️ Встановлено ціль: ${targetScore} поїнтів`);
         updateProgress();
+        saveProgress();
     } else {
-        alert(
-            "Неправильна відповідь! Тільки батьки можуть змінювати налаштування.",
-        );
-        // Повертаємо попереднє значення
+        alert("Неправильна відповідь!");
         document.getElementById("targetScoreInput").value = targetScore;
     }
 }
 
-function playEmojiSound() {
-    const current = getCurrentArray()[currentIndex];
-
-    // Використовуємо аудіофайли для букв
-    if (currentTab === "letters" && current.sound) {
-        const audio = new Audio(`sounds/ua/letters/${current.sound}.wav`);
-        audio.volume = 0.8;
-        
-        // Обробка помилок завантаження аудіо
-        audio.onerror = function() {
-            console.log(`Помилка завантаження аудіо для букви ${current.sound}`);
-            // Fallback до speechSynthesis
-            if ("speechSynthesis" in window) {
-                const utterance = new SpeechSynthesisUtterance(current.word);
-                utterance.lang = "uk-UA";
-                utterance.rate = 0.9;
-                utterance.pitch = 1.2;
-
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
-
-                speechSynthesis.speak(utterance);
-            }
-        };
-        
-        audio.play().catch(function(error) {
-            console.log(`Помилка відтворення аудіо: ${error}`);
-            // Fallback до speechSynthesis
-            if ("speechSynthesis" in window) {
-                const utterance = new SpeechSynthesisUtterance(current.word);
-                utterance.lang = "uk-UA";
-                utterance.rate = 0.9;
-                utterance.pitch = 1.2;
-
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
-
-                speechSynthesis.speak(utterance);
-            }
-        });
-    } else {
-        // Для цифр або якщо немає звуку, використовуємо speechSynthesis
-        if ("speechSynthesis" in window) {
-            const utterance = new SpeechSynthesisUtterance(current.word);
-            utterance.lang = "uk-UA";
-            utterance.rate = 0.9;
-            utterance.pitch = 1.2;
-
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            }
-
-            speechSynthesis.speak(utterance);
-        }
-    }
-
-    // Візуальний ефект для емодзі
-    const emoji = document.getElementById("emojiDisplay");
-    emoji.style.transform = "scale(1.4)";
-    emoji.style.filter = "brightness(1.2)";
-
-    setTimeout(() => {
-        emoji.style.transform = "scale(1)";
-        emoji.style.filter = "brightness(1)";
-    }, 600);
-}
-
-function playQuestionEmojiSound() {
-    if (currentQuestion) {
-        // Використовуємо аудіофайли для букв
-        if (currentTab === "letters" && currentQuestion.sound) {
-            const audio = new Audio(`sounds/ua/letters/${currentQuestion.sound}.wav`);
-            audio.volume = 0.8;
-            
-            // Обробка помилок завантаження аудіо
-            audio.onerror = function() {
-                console.log(`Помилка завантаження аудіо для букви ${currentQuestion.sound}`);
-                // Fallback до speechSynthesis
-                if ("speechSynthesis" in window) {
-                    const utterance = new SpeechSynthesisUtterance(currentQuestion.word);
-                    utterance.lang = "uk-UA";
-                    utterance.rate = 0.9;
-                    utterance.pitch = 1.2;
-
-                    if (selectedVoice) {
-                        utterance.voice = selectedVoice;
-                    }
-
-                    speechSynthesis.speak(utterance);
-                }
-            };
-            
-            audio.play().catch(function(error) {
-                console.log(`Помилка відтворення аудіо: ${error}`);
-                // Fallback до speechSynthesis
-                if ("speechSynthesis" in window) {
-                    const utterance = new SpeechSynthesisUtterance(currentQuestion.word);
-                    utterance.lang = "uk-UA";
-                    utterance.rate = 0.9;
-                    utterance.pitch = 1.2;
-
-                    if (selectedVoice) {
-                        utterance.voice = selectedVoice;
-                    }
-
-                    speechSynthesis.speak(utterance);
-                }
-            });
-        } else {
-            // Для цифр або якщо немає звуку, використовуємо speechSynthesis
-            if ("speechSynthesis" in window) {
-                const utterance = new SpeechSynthesisUtterance(currentQuestion.word);
-                utterance.lang = "uk-UA";
-                utterance.rate = 0.9;
-                utterance.pitch = 1.2;
-
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
-
-                speechSynthesis.speak(utterance);
-            }
-        }
-
-        // Візуальний ефект
-        const emoji = document.getElementById("questionEmoji");
-        emoji.style.transform = "scale(1.3)";
-        emoji.style.filter = "brightness(1.3)";
-
-        setTimeout(() => {
-            emoji.style.transform = "scale(1)";
-            emoji.style.filter = "brightness(1)";
-        }, 600);
-    }
-}
-
 function nextLetter() {
-    const currentArray = getCurrentArray();
-    currentIndex = (currentIndex + 1) % currentArray.length;
+    currentIndex = (currentIndex + 1) % getCurrentArray().length;
     updateDisplay();
     playSound();
 }
 
 function previousLetter() {
-    const currentArray = getCurrentArray();
-    currentIndex =
-        currentIndex === 0 ? currentArray.length - 1 : currentIndex - 1;
+    const arrLength = getCurrentArray().length;
+    currentIndex = (currentIndex - 1 + arrLength) % arrLength;
     updateDisplay();
     playSound();
 }
 
 function markAsLearned() {
     const current = getCurrentArray()[currentIndex];
-    const currentValue =
-        currentTab === "letters" ? current.letter : current.number;
+    const currentValue = currentTab === "letters" ? current.letter : current.number;
     const learnedArray = getCurrentLearnedArray();
 
     if (!learnedArray.includes(currentValue)) {
         learnedArray.push(currentValue);
-
-        const itemType = currentTab === "letters" ? "букву" : "цифру";
-        showCelebration(
-            `✅ Молодець! ${itemType.charAt(0).toUpperCase() + itemType.slice(1)} вивчено!`,
-            "general",
-        );
+        const itemType = currentTab === "letters" ? "Букву" : "Цифру";
+        showCelebration(`✅ Молодець! ${itemType} вивчено!`, "general");
         updateProgress();
-
-        // Зберігаємо прогрес
-        if (currentUser) {
-            saveProgressToCloud();
-        } else {
-            saveProgressToLocal();
-        }
-
-        setTimeout(() => {
-            nextLetter();
-        }, 1500);
+        saveProgress();
+        setTimeout(nextLetter, 1500);
     } else {
-        const itemType = currentTab === "letters" ? "буква" : "цифра";
-        showCelebration(`📚 Ця ${itemType} вже вивчена!`, "general");
+        showCelebration("📚 Вже вивчено!", "general");
     }
 }
 
@@ -1402,11 +942,7 @@ function showCelebration(message = "🎉 Молодець! 🎉", type = "genera
     const celebration = document.createElement("div");
     celebration.className = `celebration ${type}`;
     celebration.textContent = message;
-
-    // Додаємо елемент до сторінки
     document.body.appendChild(celebration);
-
-    // Видаляємо елемент після завершення анімації
     celebration.addEventListener("animationend", () => {
         if (document.body.contains(celebration)) {
             document.body.removeChild(celebration);
@@ -1414,308 +950,62 @@ function showCelebration(message = "🎉 Молодець! 🎉", type = "genera
     });
 }
 
-function practiceWriting() {
-    const writingArea = document.getElementById("writingArea");
-    
-    // Перевіряємо, чи canvas вже існує
-    if (writingArea.querySelector('canvas')) {
-        return;
-    }
-    
-    // Очищаємо область
-    writingArea.innerHTML = '';
-    
-    // Створюємо canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = 300;
-    canvas.height = 150;
-    canvas.style.border = '2px solid #ddd';
-    canvas.style.borderRadius = '10px';
-    canvas.style.backgroundColor = 'white';
-    canvas.style.cursor = 'crosshair';
-    canvas.style.marginBottom = '10px';
-    
-    const ctx = canvas.getContext('2d');
-    
-    // Налаштування контексту
-    ctx.strokeStyle = '#2d3436';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    
-    // Змінні для малювання
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-    
-    // Малюємо контур букви А
-    function drawLetterA() {
-        ctx.strokeStyle = '#ddd';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const size = 50;
-        
-        ctx.beginPath();
-        // Ліва діагональна лінія
-        ctx.moveTo(centerX - size/2, centerY + size/2);
-        ctx.lineTo(centerX, centerY - size/2);
-        // Права діагональна лінія
-        ctx.lineTo(centerX + size/2, centerY + size/2);
-        // Горизонтальна лінія посередині
-        ctx.moveTo(centerX - size/3, centerY);
-        ctx.lineTo(centerX + size/3, centerY);
-        ctx.stroke();
-        
-        ctx.setLineDash([]);
-        ctx.strokeStyle = '#2d3436';
-        ctx.lineWidth = 3;
-    }
-    
-    // Функція для отримання координат
-    function getMousePos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        
-        if (e.touches && e.touches[0]) {
-            return {
-                x: (e.touches[0].clientX - rect.left) * scaleX,
-                y: (e.touches[0].clientY - rect.top) * scaleY
-            };
-        } else {
-            return {
-                x: (e.clientX - rect.left) * scaleX,
-                y: (e.clientY - rect.top) * scaleY
-            };
-        }
-    }
-    
-    // Початок малювання
-    function startDrawing(e) {
-        isDrawing = true;
-        const pos = getMousePos(e);
-        lastX = pos.x;
-        lastY = pos.y;
-        
-        // Починаємо новий шлях або продовжуємо існуючий
-        ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
-    }
-    
-    // Малювання
-    function draw(e) {
-        if (!isDrawing) return;
-        
-        const pos = getMousePos(e);
-        const currentX = pos.x;
-        const currentY = pos.y;
-        
-        ctx.lineTo(currentX, currentY);
-        ctx.stroke();
-        
-        lastX = currentX;
-        lastY = currentY;
-    }
-    
-    // Закінчення малювання (але не очищення)
-    function stopDrawing() {
-        if (!isDrawing) return;
-        isDrawing = false;
-        // Відновлюємо контекст малювання
-        ctx.strokeStyle = '#2d3436';
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        // Не очищаємо canvas автоматично - дозволяємо продовжувати малювання
-    }
-    
-    // Очищення canvas
-    function clearCanvas() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawLetterA();
-    }
-    
-    // Завершення малювання
-    function finishDrawing() {
-        showCelebration("✅ Чудово! Ти намалював букву А!", "correct");
-        
-        // Очищаємо через 2 секунди
-        setTimeout(() => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawLetterA();
-        }, 200);
-    }
-    
-    // Додаємо обробники подій
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        startDrawing(e);
-    });
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        draw(e);
-    });
-    canvas.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        stopDrawing();
-    });
-    
-    // Створюємо кнопку очищення
-    const clearBtn = document.createElement('button');
-    clearBtn.textContent = '🧹 Очистити';
-    clearBtn.className = 'btn btn-secondary';
-    clearBtn.onclick = clearCanvas;
-    
-    // Створюємо кнопку завершення
-    const finishBtn = document.createElement('button');
-    finishBtn.textContent = '✅ Готово';
-    finishBtn.className = 'btn btn-primary';
-    finishBtn.onclick = finishDrawing;
-    
-    // Додаємо елементи
-    writingArea.appendChild(canvas);
-    writingArea.appendChild(clearBtn);
-    writingArea.appendChild(finishBtn);
-    
-    // Малюємо контур
-    drawLetterA();
-}
-
-// Додаємо можливість натискати на емодзі
-document.addEventListener("DOMContentLoaded", () => {
-    // При натисканні на емодзі в режимі навчання - озвучуємо тільки слово
-    document
-        .getElementById("emojiDisplay")
-        .addEventListener("click", playEmojiSound);
-
-    // При натисканні на емодзі в режимі тренування - озвучуємо слово питання
-    document
-        .getElementById("questionEmoji")
-        .addEventListener("click", playQuestionEmojiSound);
-
-    // При натисканні на букву - повна озвучка
-    document
-        .getElementById("currentLetter")
-        .addEventListener("click", playSound);
-
-    // Завантажуємо прогрес
-    if (currentUser) {
-        loadProgressFromCloud();
-    } else {
-        loadProgressFromLocal();
-    }
-});
-
-// Ініціалізація
-shuffleAlphabet();
-shuffleNumbers();
-updateDisplay();
-
-// Додаємо підтримку клавіатури
-document.addEventListener("keydown", (e) => {
-    // Якщо ми в режимі тренування, блокуємо стрілки та змінюємо логіку пробілу
-    if (currentMode === "training") {
-        switch (e.key) {
-            case "ArrowLeft":
-            case "ArrowRight":
-                // Блокуємо стрілки в режимі тренування
-                e.preventDefault();
-                return;
-            case " ":
-                e.preventDefault();
-                // В режимі тренування пробіл озвучує питання
-                playQuestionEmojiSound();
-                break;
-            case "Enter":
-                // Enter в тренуванні не робить нічого
-                e.preventDefault();
-                return;
-        }
-    } else {
-        // В режимі навчання працюють всі клавіші як раніше
-        switch (e.key) {
-            case "ArrowLeft":
-                previousLetter();
-                break;
-            case "ArrowRight":
-                nextLetter();
-                break;
-            case " ":
-                e.preventDefault();
-                playSound();
-                break;
-            case "Enter":
-                markAsLearned();
-                break;
-        }
-    }
-});
-
-// Підтримка touch подій для мобільних
-let touchStartX = 0;
-let touchEndX = 0;
-
-document.addEventListener("touchstart", (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-});
-
-document.addEventListener("touchend", (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-});
-
-function handleSwipe() {
-    const swipeThreshold = 50;
-    const diff = touchStartX - touchEndX;
-
-    if (Math.abs(diff) > swipeThreshold) {
-        if (diff > 0) {
-            nextLetter(); // Свайп вліво = наступна буква
-        } else {
-            previousLetter(); // Свайп вправо = попередня буква
-        }
-    }
-}
-
-speechSynthesis.addEventListener("voiceschanged", initializeVoices);
-initializeVoices(); // Викликаємо одразу на випадок, якщо голоси вже завантажені 
-
-function resetProgress() {
-    // Запитуємо підтвердження
-    if (!confirm("Ви впевнені, що хочете скинути весь прогрес? Цю дію неможливо скасувати.")) {
-        return;
-    }
-
-    // Скидаємо всі дані
-    learnedLetters = [];
-    learnedNumbers = [];
-    score = 0;
-    targetScore = 0;
-
-    // Оновлюємо відображення
-    document.getElementById("targetScoreInput").value = "0";
-    const scoreDisplay = document.getElementById("scoreDisplay");
-    scoreDisplay.textContent = "Рахунок: 0";
-
-    // Оновлюємо інтерфейс
-    updateDisplay();
-    updateProgress();
-    updateAlphabetGrid();
-
-    // Зберігаємо зміни
+function saveProgress() {
     if (currentUser) {
         saveProgressToCloud();
     } else {
         saveProgressToLocal();
     }
+}
 
-    // Показуємо повідомлення
-    showCelebration("🔄 Прогрес скинуто!", "general");
-} 
+function resetProgress() {
+    if (confirm("Ви впевнені, що хочете скинути весь прогрес?")) {
+        learnedLetters = [];
+        learnedNumbers = [];
+        score = 0;
+        targetScore = 0;
+        document.getElementById("targetScoreInput").value = "0";
+        updateDisplay();
+        updateProgress();
+        saveProgress();
+        showCelebration("🔄 Прогрес скинуто!", "general");
+    }
+}
+
+// Функції для практики написання
+function setupWritingArea() {
+    const writingArea = document.getElementById('writingArea');
+    if (!writingArea) return;
+
+    if (currentTab === 'letters' && currentMode === 'learning') {
+        writingArea.style.display = 'flex';
+        // Показуємо підказку, лише якщо там ще немає полотна
+        if (!writingArea.querySelector('canvas')) {
+            writingArea.innerHTML = '✏️ Натисни, щоб попрактикувати написання';
+        }
+    } else {
+        writingArea.style.display = 'none';
+    }
+}
+
+function handleWritingAreaClick() {
+    const writingArea = document.getElementById('writingArea');
+    // Запускаємо, тільки якщо активна вкладка з буквами і там ще немає полотна
+    if (currentTab === 'letters' && !writingArea.querySelector('canvas')) {
+        const currentLetter = getCurrentArray()[currentIndex]?.letter;
+        if (currentLetter) {
+            practiceWriting(currentLetter);
+        }
+    }
+}
+
+// Ініціалізація
+document.addEventListener("DOMContentLoaded", () => {
+    switchMode('learning'); // Починаємо з режиму навчання
+    shuffleAlphabet();
+    shuffleNumbers();
+    // Завантаження прогресу ініціюється через onAuthStateChanged
+});
+
+speechSynthesis.addEventListener("voiceschanged", initializeVoices);
+initializeVoices();
