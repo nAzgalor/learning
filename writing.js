@@ -337,7 +337,9 @@ const referenceLetters = {
 
 function practiceWriting(letter = 'А') {
     const writingArea = document.getElementById("writingArea");
-    writingArea.innerHTML = '';
+    if (!writingArea) return;
+
+    writingArea.innerHTML = ''; // Очищаємо, щоб прибрати текст "Натисни..."
     const canvas = document.createElement('canvas');
     canvas.width = 300;
     canvas.height = 150;
@@ -346,20 +348,25 @@ function practiceWriting(letter = 'А') {
     canvas.style.backgroundColor = 'white';
     canvas.style.cursor = 'crosshair';
     canvas.style.marginBottom = '10px';
+
     const ctx = canvas.getContext('2d');
     const ref = referenceLetters[letter] || referenceLetters['А'];
     const referencePoints = ref.points;
+
     let userPoints = [];
     ctx.strokeStyle = '#2d3436';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
+
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
+
     function drawLetter() {
         ref.draw(ctx);
     }
+
     function getMousePos(e) {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
@@ -376,92 +383,90 @@ function practiceWriting(letter = 'А') {
             };
         }
     }
+
     function startDrawing(e) {
         isDrawing = true;
         const pos = getMousePos(e);
-        lastX = pos.x;
-        lastY = pos.y;
+        [lastX, lastY] = [pos.x, pos.y];
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         userPoints.push({x: lastX, y: lastY});
     }
+
     function draw(e) {
         if (!isDrawing) return;
         const pos = getMousePos(e);
-        const currentX = pos.x;
-        const currentY = pos.y;
-        ctx.lineTo(currentX, currentY);
+        ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
-        lastX = currentX;
-        lastY = currentY;
-        userPoints.push({x: currentX, y: currentY});
+        [lastX, lastY] = [pos.x, pos.y];
+        userPoints.push({x: lastX, y: lastY});
     }
+
     function stopDrawing() {
         if (!isDrawing) return;
         isDrawing = false;
-        ctx.strokeStyle = '#2d3436';
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
     }
+
     function clearCanvas() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawLetter();
         userPoints = [];
     }
+    
     function finishDrawing() {
-        const DIST_THRESHOLD = 15;
-        const MIN_PERCENT = 0.7;
-        let closePoints = 0;
-        for (let i = 0; i < userPoints.length; i++) {
-            const up = userPoints[i];
-            let minDist = Infinity;
-            for (let j = 0; j < referencePoints.length; j++) {
-                const rp = referencePoints[j];
-                const dist = Math.sqrt((up.x - rp.x) ** 2 + (up.y - rp.y) ** 2);
-                if (dist < minDist) minDist = dist;
+        const DIST_THRESHOLD = 20; // Збільшимо поріг для зручності
+        const MIN_PERCENT = 0.6; // Трохи знизимо вимоги
+        let closePointsCount = 0;
+
+        for (const userPoint of userPoints) {
+            let minDistance = Infinity;
+            for (const refPoint of referencePoints) {
+                const distance = Math.sqrt(Math.pow(userPoint.x - refPoint.x, 2) + Math.pow(userPoint.y - refPoint.y, 2));
+                if (distance < minDistance) {
+                    minDistance = distance;
+                }
             }
-            if (minDist < DIST_THRESHOLD) closePoints++;
+            if (minDistance <= DIST_THRESHOLD) {
+                closePointsCount++;
+            }
         }
-        const percent = userPoints.length > 0 ? closePoints / userPoints.length : 0;
+
+        const percent = userPoints.length > 0 ? closePointsCount / userPoints.length : 0;
+        
         if (percent >= MIN_PERCENT) {
-            showCelebration(`✅ Молодець! Ти обвів букву ${letter}!`, "correct");
+            showCelebration(`✅ Молодець! Ти гарно обвів букву ${letter}!`, "correct");
         } else {
             showCelebration(`🔄 Спробуй ще раз, малюй ближче до контуру!`, "incorrect");
         }
-        setTimeout(() => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawLetter();
-            userPoints = [];
-        }, 200);
+        
+        // Очищаємо для нової спроби
+        setTimeout(clearCanvas, 1500);
     }
+
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        startDrawing(e);
-    });
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        draw(e);
-    });
-    canvas.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        stopDrawing();
-    });
-    document.addEventListener('mouseup', stopDrawing);
-    document.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing); // Зупиняти, якщо курсор вийшов за межі
+
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrawing(e); });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+    canvas.addEventListener('touchend', (e) => { e.preventDefault(); stopDrawing(e); });
+
+    const controlsDiv = document.createElement('div');
     const clearBtn = document.createElement('button');
     clearBtn.textContent = '🧹 Очистити';
     clearBtn.className = 'btn btn-secondary';
     clearBtn.onclick = clearCanvas;
+
     const finishBtn = document.createElement('button');
     finishBtn.textContent = '✅ Готово';
     finishBtn.className = 'btn btn-primary';
     finishBtn.onclick = finishDrawing;
+
     writingArea.appendChild(canvas);
-    writingArea.appendChild(clearBtn);
-    writingArea.appendChild(finishBtn);
+    controlsDiv.appendChild(clearBtn);
+    controlsDiv.appendChild(finishBtn);
+    writingArea.appendChild(controlsDiv);
+
     drawLetter();
-} 
+}

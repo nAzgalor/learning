@@ -373,7 +373,7 @@ body {
 .writing-area {
     width: 100%;
     max-width: 400px;
-    height: 200px;
+    /* height: 200px; */ /* Висота тепер автоматична */
     background: rgba(255, 255, 255, 0.9);
     border-radius: 15px;
     margin: 20px 0;
@@ -388,6 +388,7 @@ body {
     text-align: center;
     flex-direction: column;
     padding: 10px;
+    min-height: 200px;
 }
 
 .writing-area canvas {
@@ -397,6 +398,8 @@ body {
     cursor: crosshair;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    /* Розміри задаються в JS, але можна встановити max */
+    max-width: 100%;
 }
 
 .writing-area canvas:hover {
@@ -404,25 +407,15 @@ body {
     transform: translateY(-2px);
 }
 
+/* Стилі для кнопок під полотном */
 .writing-area .btn {
-    margin: 5px;
+    margin: 8px 5px 0 5px;
     padding: 8px 16px;
-    border: none;
     border-radius: 20px;
     font-size: 0.9rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.9);
-    color: #2d3436;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    min-width: 100px;
 }
 
-.writing-area .btn:hover {
-    background: white;
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
 
 .writing-area .btn:active {
     transform: scale(0.95);
