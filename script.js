@@ -594,6 +594,17 @@ function initializeVoices() {
     console.log("Обраний голос:", selectedVoice?.name);
 }
 
+// Додаю універсальну функцію для програвання звуку для букви/цифри
+function playItemSound(item) {
+    if (currentTab === "letters" && item.sound) {
+        const audio = new Audio(`sounds/ua/letters/${item.sound}.wav`);
+        audio.play().catch(() => speakFallback(item.letter, item.word));
+    } else {
+        // Для цифр або якщо немає запису — синтез
+        speakFallback(currentTab === "letters" ? item.letter : item.number, item.word);
+    }
+}
+
 function generateQuestion() {
     buttonsLocked = false;
     const originalArray = getOriginalArray();
@@ -623,14 +634,8 @@ function generateQuestion() {
     const questionType = currentTab === "letters" ? "букву" : "цифру";
     document.getElementById("questionText").textContent = `Яка це ${questionType}? (${correctItem.word})`;
 
-    if ("speechSynthesis" in window) {
-        const utterance = new SpeechSynthesisUtterance(correctItem.word);
-        utterance.lang = "uk-UA";
-        utterance.rate = 0.9;
-        utterance.pitch = 1.2;
-        if (selectedVoice) utterance.voice = selectedVoice;
-        speechSynthesis.speak(utterance);
-    }
+    // Використовую універсальну функцію для програвання звуку
+    playItemSound(correctItem);
 
     const emoji = document.getElementById("questionEmoji");
     emoji.style.transform = "scale(1.2)";
