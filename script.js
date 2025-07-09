@@ -1010,11 +1010,10 @@ function handleWritingAreaClick() {
 }
 
 // Ініціалізація
-document.addEventListener("DOMContentLoaded", () => {
-    switchMode('learning'); // Починаємо з режиму навчання
+document.addEventListener("DOMContentLoaded", function() {
     shuffleAlphabet();
     shuffleNumbers();
-    // Завантаження прогресу ініціюється через onAuthStateChanged
+    switchMode('learning'); // updateDisplay() викликається всередині
 });
 
 speechSynthesis.addEventListener("voiceschanged", initializeVoices);
