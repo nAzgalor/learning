@@ -630,7 +630,12 @@ function generateQuestion() {
 
     currentQuestion = correctItem;
 
-    document.getElementById("questionEmoji").textContent = correctItem.emoji;
+    const questionEmoji = document.getElementById("questionEmoji");
+    if (currentTab === "letters") {
+        questionEmoji.innerHTML = `<img src='images/ua/letters/${correctItem.sound}.png' alt='${correctItem.letter}' style='height: 300px;'>`;
+    } else {
+        questionEmoji.textContent = correctItem.emoji;
+    }
     const questionType = currentTab === "letters" ? "букву" : "цифру";
     document.getElementById("questionText").textContent = `Яка це ${questionType}? (${correctItem.word})`;
 
@@ -759,7 +764,12 @@ function updateDisplay() {
     const displayValue = currentTab === "letters" ? current.letter : current.number;
 
     document.getElementById("currentLetter").textContent = displayValue;
-    document.getElementById("emojiDisplay").textContent = current.emoji;
+    const emojiDisplay = document.getElementById("emojiDisplay");
+    if (currentTab === "letters") {
+        emojiDisplay.innerHTML = `<img src='images/ua/letters/${current.sound}.png' alt='${current.letter}' style='height: 300px;'>`;
+    } else {
+        emojiDisplay.textContent = current.emoji;
+    }
     document.getElementById("letterName").textContent = `${displayValue} - "${current.name}"`;
     document.getElementById("letterExample").textContent = current.example;
     document.getElementById("letterSound").textContent = `Натисни на ${currentTab === "letters" ? "букву" : "цифру"} або емодзі!`;
@@ -1000,11 +1010,10 @@ function handleWritingAreaClick() {
 }
 
 // Ініціалізація
-document.addEventListener("DOMContentLoaded", () => {
-    switchMode('learning'); // Починаємо з режиму навчання
+document.addEventListener("DOMContentLoaded", function() {
     shuffleAlphabet();
     shuffleNumbers();
-    // Завантаження прогресу ініціюється через onAuthStateChanged
+    switchMode('learning'); // updateDisplay() викликається всередині
 });
 
 speechSynthesis.addEventListener("voiceschanged", initializeVoices);
